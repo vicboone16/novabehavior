@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Trash2,
   RefreshCw,
@@ -12,9 +12,9 @@ import {
   FlaskConical,
   History,
   Lock,
-  ChevronLeft,
-  ChevronRight,
+  Search,
 } from 'lucide-react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -36,13 +36,25 @@ import { clearStudentBehaviorNameMap } from '@/lib/behaviorNameResolver';
 import { useAuth } from '@/contexts/AuthContext';
 import { logAuditEvent, logDataAccess, flushPendingLogs } from '@/lib/auditLogger';
 import {
-  selectRestoredRecords,
-  paginate,
-  pageCount,
   type CleanupCriteria,
-  type CleanupMapRow,
   type CleanupDataRow,
+  type CleanupMapRow,
+  type SelectionResult,
 } from '@/lib/restoredCleanupSelection';
+import {
+  buildCleanupCsvRows,
+  canRunCleanup,
+  runCleanup,
+  runDryRun,
+  runExportAudit,
+  runRestore,
+  scanStudent,
+  toCsv,
+  type ActorContext,
+  type ArchivePayload,
+  type AuditInput,
+  type CleanupStore,
+} from '@/lib/restoredCleanupFlow';
 
 const db = supabase as any;
 
@@ -53,6 +65,7 @@ interface StudentOpt {
 
 interface AuditRow {
   id: string;
+  student_id: string | null;
   student_name: string | null;
   performed_by_email: string | null;
   mode: string;
@@ -66,20 +79,14 @@ interface AuditRow {
 }
 
 const RETENTION_DAYS = 30;
-const PAGE_SIZES = [25, 50, 100, 250];
-/** Roles permitted to view or purge education records under FERPA least-privilege. */
-const ALLOWED_ROLES = ['super_admin', 'admin'];
+const ROW_HEIGHT = 34;
+const VIRTUAL_THRESHOLD = 40;
+const VIEWPORT_HEIGHT = 380;
 
 const maskUuid = (id?: string | null) => (id ? `${id.slice(0, 8)}…` : '—');
 
-const csvCell = (v: unknown) => {
-  const s = v === null || v === undefined ? '' : String(v);
-  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-};
-
-function downloadCsv(filename: string, rows: (string | number | null)[][]) {
-  const body = rows.map((r) => r.map(csvCell).join(',')).join('\n');
-  const blob = new Blob([body], { type: 'text/csv;charset=utf-8;' });
+function downloadCsvText(filename: string, text: string) {
+  const blob = new Blob([text], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -87,6 +94,83 @@ function downloadCsv(filename: string, rows: (string | number | null)[][]) {
   a.click();
   URL.revokeObjectURL(url);
 }
+
+/** Supabase-backed implementation of the storage-agnostic cleanup store. */
+const supabaseStore: CleanupStore = {
+  async fetchMapRows(studentId) {
+    const { data } = await db
+      .from('student_behavior_map')
+      .select(
+        'id, behavior_subtype, behavior_entry_id, bank_behavior_id, archived_reason, archived_at, notes, created_at, active',
+      )
+      .eq('student_id', studentId);
+    return (data ?? []) as CleanupMapRow[];
+  },
+  async fetchDataRows(studentId) {
+    const { data } = await db
+      .from('behavior_session_data')
+      .select(
+        'id, session_id, behavior_id, frequency, duration_seconds, observation_minutes, created_at',
+      )
+      .eq('student_id', studentId);
+    return (data ?? []) as any[];
+  },
+  async fetchCanonicalIds() {
+    const { data } = await db.from('nt_behaviors').select('id');
+    return new Set<string>((data ?? []).map((r: any) => r.id));
+  },
+  async fetchBehaviorNames(ids) {
+    const { data } = await db.from('behaviors').select('id, name').in('id', ids);
+    return new Map<string, string>((data ?? []).map((d: any) => [d.id, d.name]));
+  },
+  async fetchFullMapRows(ids) {
+    const { data } = await db.from('student_behavior_map').select('*').in('id', ids);
+    return data ?? [];
+  },
+  async fetchFullDataRows(ids) {
+    const { data } = await db.from('behavior_session_data').select('*').in('id', ids);
+    return data ?? [];
+  },
+  async insertAudit(input: AuditInput) {
+    const { data, error } = await db
+      .from('cleanup_audit_logs')
+      .insert(input)
+      .select('id')
+      .single();
+    if (error) throw error;
+    return data.id as string;
+  },
+  async insertArchives(rows: ArchivePayload[]) {
+    const { error } = await db.from('cleanup_archived_records').insert(rows);
+    if (error) throw error;
+  },
+  async deleteMapRows(ids) {
+    const { error } = await db.from('student_behavior_map').delete().in('id', ids);
+    if (error) throw error;
+  },
+  async deleteDataRows(ids) {
+    const { error } = await db.from('behavior_session_data').delete().in('id', ids);
+    if (error) throw error;
+  },
+  async restoreArchive(auditLogId) {
+    const { data, error } = await db.rpc('restore_cleanup_archive', {
+      _audit_log_id: auditLogId,
+    });
+    if (error) throw error;
+    return {
+      restored_map_rows: data?.restored_map_rows ?? 0,
+      restored_data_rows: data?.restored_data_rows ?? 0,
+    };
+  },
+};
+
+const emptySelection: SelectionResult = {
+  matchedMapRows: [],
+  matchedDataRows: [],
+  warnings: [],
+  totals: { freq: 0, dur: 0, obs: 0 },
+  previewCount: 0,
+};
 
 export default function RestoredCleanup() {
   const { userRole, roleLoading, user } = useAuth();
@@ -96,11 +180,9 @@ export default function RestoredCleanup() {
   const [busy, setBusy] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
 
-  // ── Modes ─────────────────────────────────────────────────────
   const [dryRun, setDryRun] = useState(true);
   const [softDelete, setSoftDelete] = useState(true);
 
-  // ── "Restored" definition filters ─────────────────────────────
   const [useNamePattern, setUseNamePattern] = useState(true);
   const [namePattern, setNamePattern] = useState('Restored');
   const [useReason, setUseReason] = useState(false);
@@ -110,18 +192,25 @@ export default function RestoredCleanup() {
   const [toDate, setToDate] = useState('');
   const [useMissingCanonical, setUseMissingCanonical] = useState(false);
 
-  const [mapRows, setMapRows] = useState<CleanupMapRow[]>([]);
-  const [dataRows, setDataRows] = useState<CleanupDataRow[]>([]);
-  const [warnings, setWarnings] = useState<string[]>([]);
-  const [totals, setTotals] = useState({ freq: 0, dur: 0, obs: 0 });
+  const [selection, setSelection] = useState<SelectionResult>(emptySelection);
   const [scanned, setScanned] = useState(false);
   const [audits, setAudits] = useState<AuditRow[]>([]);
+  const [auditSearch, setAuditSearch] = useState('');
+  const [auditMode, setAuditMode] = useState('all');
   const [purpose, setPurpose] = useState('');
 
-  const allowed = ALLOWED_ROLES.includes(userRole ?? '');
+  const authorized = canRunCleanup(userRole);
+  const actor: ActorContext = useMemo(
+    () => ({ userId: user?.id ?? null, email: user?.email ?? null, role: userRole }),
+    [user?.id, user?.email, userRole],
+  );
+
+  const { matchedMapRows: mapRows, matchedDataRows: dataRows, warnings, totals } =
+    selection;
+  const totalRecords = selection.previewCount;
 
   useEffect(() => {
-    if (!allowed) return;
+    if (!authorized) return;
     db.from('students')
       .select('id, name, first_name, last_name, is_archived')
       .order('first_name')
@@ -136,20 +225,20 @@ export default function RestoredCleanup() {
           })),
         );
       });
-  }, [allowed]);
+  }, [authorized]);
 
   const loadAudits = useCallback(async () => {
     const { data } = await db
       .from('cleanup_audit_logs')
       .select('*')
       .order('created_at', { ascending: false })
-      .limit(25);
+      .limit(500);
     setAudits((data ?? []) as AuditRow[]);
   }, []);
 
   useEffect(() => {
-    if (allowed) loadAudits();
-  }, [allowed, loadAudits]);
+    if (authorized) loadAudits();
+  }, [authorized, loadAudits]);
 
   const selectedStudent = useMemo(
     () => students.find((s) => s.id === studentId),
@@ -202,55 +291,13 @@ export default function RestoredCleanup() {
   );
 
   const scan = useCallback(async () => {
-    if (!studentId || !allowed) return;
+    if (!studentId || !authorized) return;
     setLoading(true);
     setScanned(false);
     try {
-      const [{ data: sbm }, { data: bsd }, { data: canon }] = await Promise.all([
-        db
-          .from('student_behavior_map')
-          .select(
-            'id, behavior_subtype, behavior_entry_id, bank_behavior_id, archived_reason, archived_at, notes, created_at, active',
-          )
-          .eq('student_id', studentId),
-        db
-          .from('behavior_session_data')
-          .select(
-            'id, session_id, behavior_id, frequency, duration_seconds, observation_minutes, created_at',
-          )
-          .eq('student_id', studentId),
-        db.from('nt_behaviors').select('id'),
-      ]);
-
-      const canonicalIds = new Set<string>((canon ?? []).map((r: any) => r.id));
-
-      const behaviorIds = [
-        ...new Set((bsd ?? []).map((r: any) => r.behavior_id).filter(Boolean)),
-      ] as string[];
-      const nameById = new Map<string, string>();
-      if (behaviorIds.length > 0) {
-        const { data: defs } = await db
-          .from('behaviors')
-          .select('id, name')
-          .in('id', behaviorIds);
-        (defs ?? []).forEach((d: any) => nameById.set(d.id, d.name));
-      }
-
-      const result = selectRestoredRecords({
-        criteria,
-        mapRows: (sbm ?? []) as CleanupMapRow[],
-        dataRows: (bsd ?? []) as any[],
-        nameById,
-        canonicalIds,
-      });
-
-      setWarnings(result.warnings);
-      setMapRows(result.matchedMapRows);
-      setDataRows(result.matchedDataRows);
-      setTotals(result.totals);
+      const result = await scanStudent(supabaseStore, studentId, criteria);
+      setSelection(result);
       setScanned(true);
-
-      // FERPA: every look at an education record is a logged disclosure.
       logDataAccess(studentId, 'view', 'behaviors', {
         surface: 'restored_cleanup_preview',
         criteria: criteriaRecord,
@@ -261,111 +308,53 @@ export default function RestoredCleanup() {
     } finally {
       setLoading(false);
     }
-  }, [studentId, allowed, criteria, criteriaRecord]);
-
-  const totalRecords = mapRows.length + dataRows.length;
+  }, [studentId, authorized, criteria, criteriaRecord]);
 
   const exportPreviewCsv = async () => {
-    const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
-    const rows: (string | number | null)[][] = [
-      [
-        'CONFIDENTIAL — FERPA-protected education record. Redisclosure without written consent is prohibited (34 CFR 99.33).',
-      ],
-      [
-        `Exported by ${user?.email ?? 'unknown'} on ${new Date().toISOString()} — purpose: ${purpose.trim() || 'not stated'}`,
-      ],
-      [
-        'record_type',
-        'record_id',
-        'behavior_label',
-        'definition_notes',
-        'archived_reason',
-        'canonical_id',
-        'session_id',
-        'frequency',
-        'duration_seconds',
-        'observation_minutes',
-        'created_at',
-      ],
-    ];
-    mapRows.forEach((r) =>
-      rows.push([
-        'student_behavior_map',
-        r.id,
-        r.behavior_subtype ?? '',
-        r.notes ?? '',
-        r.archived_reason ?? '',
-        r.bank_behavior_id ?? '',
-        '',
-        '',
-        '',
-        '',
-        r.created_at ?? '',
-      ]),
-    );
-    dataRows.forEach((r) =>
-      rows.push([
-        'behavior_session_data',
-        r.id,
-        r.behavior_name ?? r.behavior_id,
-        '',
-        '',
-        r.behavior_id,
-        r.session_id,
-        r.frequency ?? 0,
-        r.duration_seconds ?? 0,
-        r.observation_minutes ?? 0,
-        r.created_at ?? '',
-      ]),
-    );
-    downloadCsv(
-      `restored-cleanup-preview_${(selectedStudent?.name ?? 'client').replace(/\s+/g, '-')}_${stamp}.csv`,
-      rows,
-    );
-
-    // FERPA §99.32 disclosure record for the export itself.
-    logDataAccess(studentId, 'export', 'behaviors', {
-      surface: 'restored_cleanup_csv',
-      rows: totalRecords,
-      purpose: purpose.trim() || null,
-    });
     try {
-      await writeAudit('export');
+      const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+      const csv = toCsv(
+        buildCleanupCsvRows(selection, {
+          exportedBy: user?.email ?? null,
+          purpose: purpose.trim() || null,
+        }),
+      );
+      downloadCsvText(
+        `restored-cleanup-preview_${(selectedStudent?.name ?? 'client').replace(/\s+/g, '-')}_${stamp}.csv`,
+        csv,
+      );
+      logDataAccess(studentId, 'export', 'behaviors', {
+        surface: 'restored_cleanup_csv',
+        rows: totalRecords,
+        purpose: purpose.trim() || null,
+      });
+      await runExportAudit(supabaseStore, {
+        studentId,
+        studentName: selectedStudent?.name ?? null,
+        actor,
+        criteriaRecord,
+        selection,
+      });
       await loadAudits();
-    } catch {
-      /* export already succeeded — audit failure is surfaced by the logger */
+      toast.success('Preview exported — disclosure recorded');
+    } catch (e: any) {
+      toast.error(e?.message ?? 'Export failed');
     }
-    toast.success('Preview exported — disclosure recorded');
   };
 
-  const writeAudit = async (mode: string) => {
-    const { data: auth } = await supabase.auth.getUser();
-    const { data, error } = await db
-      .from('cleanup_audit_logs')
-      .insert({
-        student_id: studentId || null,
-        student_name: selectedStudent?.name ?? null,
-        performed_by: auth?.user?.id ?? null,
-        performed_by_email: auth?.user?.email ?? null,
-        mode,
-        criteria: criteriaRecord,
-        preview_count: totalRecords,
-        deleted_map_ids: mapRows.map((r) => r.id),
-        deleted_data_ids: dataRows.map((r) => r.id),
-        integrity_warnings: warnings,
-      })
-      .select('id')
-      .single();
-    if (error) throw error;
-    return { auditId: data.id as string, userId: auth?.user?.id ?? null };
-  };
-
-  const runDryRun = async () => {
+  const doDryRun = async () => {
     if (!studentId) return;
     setBusy(true);
     try {
-      await scan();
-      await writeAudit('dry_run');
+      const { selection: result } = await runDryRun(supabaseStore, {
+        studentId,
+        studentName: selectedStudent?.name ?? null,
+        actor,
+        criteria,
+        criteriaRecord,
+      });
+      setSelection(result);
+      setScanned(true);
       await loadAudits();
       toast.success('Dry run recorded — nothing was deleted');
     } catch (e: any) {
@@ -375,104 +364,34 @@ export default function RestoredCleanup() {
     }
   };
 
-  const runDelete = async () => {
+  const doDelete = async () => {
     if (!studentId || totalRecords === 0) return;
     setBusy(true);
     try {
-      const { auditId, userId } = await writeAudit(
-        softDelete ? 'archive' : 'hard_delete',
-      );
-
-      if (softDelete) {
-        const archives: any[] = [];
-        if (mapRows.length > 0) {
-          const { data: full } = await db
-            .from('student_behavior_map')
-            .select('*')
-            .in(
-              'id',
-              mapRows.map((r) => r.id),
-            );
-          (full ?? []).forEach((row: any) =>
-            archives.push({
-              audit_log_id: auditId,
-              student_id: studentId,
-              source_table: 'student_behavior_map',
-              record_id: row.id,
-              payload: row,
-              archived_by: userId,
-            }),
-          );
-        }
-        if (dataRows.length > 0) {
-          const { data: full } = await db
-            .from('behavior_session_data')
-            .select('*')
-            .in(
-              'id',
-              dataRows.map((r) => r.id),
-            );
-          (full ?? []).forEach((row: any) =>
-            archives.push({
-              audit_log_id: auditId,
-              student_id: studentId,
-              source_table: 'behavior_session_data',
-              record_id: row.id,
-              payload: row,
-              archived_by: userId,
-            }),
-          );
-        }
-        if (archives.length > 0) {
-          const { error } = await db.from('cleanup_archived_records').insert(archives);
-          if (error) throw error;
-        }
-      }
-
-      if (dataRows.length > 0) {
-        const { error } = await db
-          .from('behavior_session_data')
-          .delete()
-          .in(
-            'id',
-            dataRows.map((r) => r.id),
-          );
-        if (error) throw error;
-      }
-      if (mapRows.length > 0) {
-        const { error } = await db
-          .from('student_behavior_map')
-          .delete()
-          .in(
-            'id',
-            mapRows.map((r) => r.id),
-          );
-        if (error) throw error;
-      }
-
-      clearStudentBehaviorNameMap(studentId);
-      logAuditEvent(
-        'delete',
-        'behavior',
+      const res = await runCleanup(supabaseStore, {
         studentId,
-        selectedStudent?.name,
-        {
-          mode: softDelete ? 'archive' : 'hard_delete',
-          count: totalRecords,
-          criteria: criteriaRecord,
-          audit_log_id: auditId,
-        },
-      );
+        studentName: selectedStudent?.name ?? null,
+        actor,
+        criteriaRecord,
+        selection,
+        softDelete,
+      });
+      clearStudentBehaviorNameMap(studentId);
+      logAuditEvent('delete', 'behavior', studentId, selectedStudent?.name, {
+        mode: softDelete ? 'archive' : 'hard_delete',
+        count: res.deleted,
+        criteria: criteriaRecord,
+        audit_log_id: res.auditId,
+      });
       logDataAccess(studentId, 'edit', 'behaviors', {
         surface: 'restored_cleanup_delete',
-        count: totalRecords,
+        count: res.deleted,
       });
       await flushPendingLogs();
-
       toast.success(
         softDelete
-          ? `Archived ${totalRecords} record${totalRecords === 1 ? '' : 's'} — restorable for ${RETENTION_DAYS} days`
-          : `Permanently removed ${totalRecords} record${totalRecords === 1 ? '' : 's'}`,
+          ? `Archived ${res.deleted} record${res.deleted === 1 ? '' : 's'} — restorable for ${RETENTION_DAYS} days`
+          : `Permanently removed ${res.deleted} record${res.deleted === 1 ? '' : 's'}`,
       );
       setConfirmOpen(false);
       await Promise.all([scan(), loadAudits()]);
@@ -483,15 +402,10 @@ export default function RestoredCleanup() {
     }
   };
 
-  const restoreAudit = async (auditId: string) => {
+  const doRestore = async (auditId: string) => {
     setBusy(true);
     try {
-      const { data, error } = await db.rpc('restore_cleanup_archive', {
-        _audit_log_id: auditId,
-      });
-      if (error) throw error;
-      const restored =
-        (data?.restored_map_rows ?? 0) + (data?.restored_data_rows ?? 0);
+      const restored = await runRestore(supabaseStore, { auditId, actor });
       if (studentId) clearStudentBehaviorNameMap(studentId);
       logAuditEvent('unarchive', 'behavior', studentId || undefined, selectedStudent?.name, {
         audit_log_id: auditId,
@@ -500,7 +414,7 @@ export default function RestoredCleanup() {
       toast.success(
         restored > 0
           ? `Restored ${restored} record${restored === 1 ? '' : 's'}`
-          : 'Nothing to restore — retention window may have passed',
+          : 'Nothing to restore — the retention window has passed',
       );
       await Promise.all([loadAudits(), studentId ? scan() : Promise.resolve()]);
     } catch (e: any) {
@@ -523,13 +437,76 @@ export default function RestoredCleanup() {
     return parts.length ? parts.join(' · ') : 'no criteria';
   };
 
+  const filteredAudits = useMemo(() => {
+    const q = auditSearch.trim().toLowerCase();
+    return audits.filter((a) => {
+      if (auditMode !== 'all' && a.mode !== auditMode) return false;
+      if (!q) return true;
+      return [
+        a.student_name,
+        a.performed_by_email,
+        a.mode,
+        describeCriteria(a.criteria),
+        new Date(a.created_at).toLocaleString(),
+      ]
+        .filter(Boolean)
+        .some((v) => String(v).toLowerCase().includes(q));
+    });
+  }, [audits, auditSearch, auditMode]);
+
+  const exportAuditCsv = () => {
+    const rows: (string | number | null)[][] = [
+      [
+        'CONFIDENTIAL — FERPA compliance record. Redisclosure without written consent is prohibited (34 CFR 99.33).',
+      ],
+      [
+        'created_at',
+        'performed_by_email',
+        'client',
+        'mode',
+        'criteria',
+        'preview_count',
+        'deleted_map_ids',
+        'deleted_data_ids',
+        'integrity_warnings',
+        'restored_at',
+        'audit_id',
+      ],
+    ];
+    filteredAudits.forEach((a) =>
+      rows.push([
+        a.created_at,
+        a.performed_by_email ?? '',
+        a.student_name ?? '',
+        a.mode,
+        describeCriteria(a.criteria),
+        a.preview_count,
+        (a.deleted_map_ids ?? []).join(' '),
+        (a.deleted_data_ids ?? []).join(' '),
+        Array.isArray(a.integrity_warnings) ? a.integrity_warnings.join(' | ') : '',
+        a.restored_at ?? '',
+        a.id,
+      ]),
+    );
+    downloadCsvText(
+      `cleanup-audit-log_${new Date().toISOString().slice(0, 10)}.csv`,
+      toCsv(rows),
+    );
+    logAuditEvent('export', 'report', undefined, 'cleanup_audit_log', {
+      rows: filteredAudits.length,
+      search: auditSearch || null,
+      mode: auditMode,
+    });
+    toast.success(`Exported ${filteredAudits.length} audit record(s)`);
+  };
+
   if (roleLoading) {
     return (
       <div className="p-6 text-sm text-muted-foreground">Checking permissions…</div>
     );
   }
 
-  if (!allowed) {
+  if (!authorized) {
     return (
       <div className="p-4 md:p-6 max-w-2xl mx-auto">
         <Card className="border-destructive/40">
@@ -541,9 +518,9 @@ export default function RestoredCleanup() {
           </CardHeader>
           <CardContent className="text-sm text-muted-foreground space-y-2">
             <p>
-              This tool permanently removes student education records. Under FERPA
-              least-privilege rules it is limited to administrators with a legitimate
-              educational interest.
+              Dry run, export, archive, delete and restore all require an admin or
+              manager role. Under FERPA least-privilege rules this tool is limited to
+              staff with a legitimate educational interest in purging records.
             </p>
             <p>Ask an administrator if you need records cleaned up for a client.</p>
           </CardContent>
@@ -579,10 +556,11 @@ export default function RestoredCleanup() {
         <Lock className="w-3.5 h-3.5 mt-0.5 text-amber-600 dark:text-amber-400 shrink-0" />
         <span>
           <strong className="text-foreground">FERPA notice.</strong> These are protected
-          education records. Access is limited to the minimum necessary, every preview,
-          export and deletion is recorded as a disclosure with your identity and stated
-          purpose, exports carry a no-redisclosure header, and archived records are
-          purged automatically after {RETENTION_DAYS} days.
+          education records. Access is limited to admins and managers, every preview,
+          export, deletion and restore is recorded as a disclosure with your identity and
+          stated purpose, exports carry a no-redisclosure header, and archived copies are
+          purged automatically by a nightly job once the {RETENTION_DAYS}-day retention
+          window closes.
         </span>
       </div>
 
@@ -598,9 +576,7 @@ export default function RestoredCleanup() {
             onValueChange={(v) => {
               setStudentId(v === '__none__' ? '' : v);
               setScanned(false);
-              setMapRows([]);
-              setDataRows([]);
-              setWarnings([]);
+              setSelection(emptySelection);
             }}
           >
             <SelectTrigger className="max-w-sm">
@@ -757,7 +733,7 @@ export default function RestoredCleanup() {
             </Button>
             <Button
               variant="outline"
-              onClick={runDryRun}
+              onClick={doDryRun}
               disabled={!studentId || busy || loading}
             >
               <FlaskConical className="w-4 h-4 mr-2" />
@@ -834,22 +810,65 @@ export default function RestoredCleanup() {
       )}
 
       <Card>
-        <CardHeader className="pb-3 flex-row items-center justify-between space-y-0">
-          <CardTitle className="text-sm flex items-center gap-2">
-            <History className="w-4 h-4" /> Cleanup audit log
-          </CardTitle>
-          <Button variant="ghost" size="sm" onClick={loadAudits}>
-            <RefreshCw className="w-3.5 h-3.5 mr-2" />
-            Refresh
-          </Button>
+        <CardHeader className="pb-3 space-y-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <History className="w-4 h-4" /> Cleanup audit log
+              <Badge variant="secondary" className="text-[10px]">
+                {filteredAudits.length} of {audits.length}
+              </Badge>
+            </CardTitle>
+            <div className="flex gap-2">
+              <Button variant="ghost" size="sm" onClick={loadAudits}>
+                <RefreshCw className="w-3.5 h-3.5 mr-2" />
+                Refresh
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={exportAuditCsv}
+                disabled={filteredAudits.length === 0}
+              >
+                <Download className="w-3.5 h-3.5 mr-2" />
+                Export compliance CSV
+              </Button>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <div className="relative flex-1 min-w-[220px]">
+              <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={auditSearch}
+                onChange={(e) => setAuditSearch(e.target.value)}
+                placeholder="Search by client, user, criteria or date…"
+                className="pl-8 h-9"
+              />
+            </div>
+            <Select value={auditMode} onValueChange={setAuditMode}>
+              <SelectTrigger className="h-9 w-[160px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="z-[10000]">
+                <SelectItem value="all">All actions</SelectItem>
+                <SelectItem value="dry_run">Dry run</SelectItem>
+                <SelectItem value="export">Export</SelectItem>
+                <SelectItem value="archive">Archive</SelectItem>
+                <SelectItem value="hard_delete">Hard delete</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </CardHeader>
         <CardContent>
-          {audits.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No cleanup activity yet.</p>
+          {filteredAudits.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              {audits.length === 0
+                ? 'No cleanup activity yet.'
+                : 'No records match this search.'}
+            </p>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto max-h-[420px] overflow-y-auto">
               <table className="w-full text-sm">
-                <thead className="text-left text-muted-foreground">
+                <thead className="text-left text-muted-foreground sticky top-0 bg-background">
                   <tr>
                     <th className="py-1.5 pr-4">When</th>
                     <th className="py-1.5 pr-4">Who</th>
@@ -862,7 +881,7 @@ export default function RestoredCleanup() {
                   </tr>
                 </thead>
                 <tbody>
-                  {audits.map((a) => {
+                  {filteredAudits.map((a) => {
                     const ids =
                       (a.deleted_map_ids?.length ?? 0) + (a.deleted_data_ids?.length ?? 0);
                     return (
@@ -899,15 +918,14 @@ export default function RestoredCleanup() {
                               variant="outline"
                               size="sm"
                               disabled={busy}
-                              onClick={() => restoreAudit(a.id)}
+                              onClick={() => doRestore(a.id)}
                             >
                               <Undo2 className="w-3.5 h-3.5 mr-1.5" />
                               Restore
                             </Button>
                           ) : a.restored_at ? (
                             <span className="text-xs text-muted-foreground">
-                              Restored{' '}
-                              {new Date(a.restored_at).toLocaleDateString()}
+                              Restored {new Date(a.restored_at).toLocaleDateString()}
                             </span>
                           ) : null}
                         </td>
@@ -932,13 +950,13 @@ export default function RestoredCleanup() {
             : 'Delete restored behavior records'
         }
         busy={busy}
-        onConfirm={runDelete}
+        onConfirm={doDelete}
         impactSummary={[
           `${mapRows.length} behavior mapping row(s) — names and definitions`,
           `${dataRows.length} session data row(s) — interval, frequency and duration`,
           `${totals.freq} total frequency events and ${totals.dur}s of duration affected`,
           softDelete
-            ? `A restorable copy is kept for ${RETENTION_DAYS} days`
+            ? `A restorable copy is kept for ${RETENTION_DAYS} days, then purged automatically`
             : 'No copy is kept — this cannot be undone',
           'This action is recorded against your account as a FERPA disclosure.',
           ...warnings,
@@ -951,62 +969,100 @@ export default function RestoredCleanup() {
   );
 }
 
-function Pager({
-  total,
-  page,
-  pageSize,
-  onPage,
-  onPageSize,
+interface Column<T> {
+  key: string;
+  header: string;
+  width: string;
+  align?: 'right';
+  render: (row: T) => React.ReactNode;
+}
+
+/**
+ * Renders a header row plus either a plain body (small sets) or a
+ * windowed body that only mounts the visible rows (large sets).
+ */
+function VirtualTable<T extends { id: string }>({
+  rows,
+  columns,
 }: {
-  total: number;
-  page: number;
-  pageSize: number;
-  onPage: (p: number) => void;
-  onPageSize: (n: number) => void;
+  rows: T[];
+  columns: Column<T>[];
 }) {
-  const pages = pageCount(total, pageSize);
-  const start = total === 0 ? 0 : (page - 1) * pageSize + 1;
-  const end = Math.min(total, page * pageSize);
+  const parentRef = useRef<HTMLDivElement>(null);
+  const virtualize = rows.length > VIRTUAL_THRESHOLD;
+
+  const virtualizer = useVirtualizer({
+    count: rows.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => ROW_HEIGHT,
+    overscan: 12,
+  });
+
+  const items = virtualizer.getVirtualItems();
+
+  const Row = ({ row, style }: { row: T; style?: React.CSSProperties }) => (
+    <div
+      style={style}
+      className="flex items-center border-t border-border text-sm w-full"
+    >
+      {columns.map((c) => (
+        <div
+          key={c.key}
+          className={`px-2 truncate ${c.align === 'right' ? 'text-right' : ''}`}
+          style={{ width: c.width, flex: `0 0 ${c.width}` }}
+        >
+          {c.render(row)}
+        </div>
+      ))}
+    </div>
+  );
+
   return (
-    <div className="flex flex-wrap items-center justify-between gap-2 pt-2 text-xs text-muted-foreground">
-      <span>
-        Showing {start}–{end} of {total}
-      </span>
-      <div className="flex items-center gap-2">
-        <Select value={String(pageSize)} onValueChange={(v) => onPageSize(Number(v))}>
-          <SelectTrigger className="h-7 w-[92px] text-xs">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent className="z-[10000]">
-            {PAGE_SIZES.map((n) => (
-              <SelectItem key={n} value={String(n)}>
-                {n} / page
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-7 px-2"
-          disabled={page <= 1}
-          onClick={() => onPage(page - 1)}
-        >
-          <ChevronLeft className="w-3.5 h-3.5" />
-        </Button>
-        <span>
-          Page {page} of {pages}
-        </span>
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-7 px-2"
-          disabled={page >= pages}
-          onClick={() => onPage(page + 1)}
-        >
-          <ChevronRight className="w-3.5 h-3.5" />
-        </Button>
+    <div className="min-w-[720px]">
+      <div className="flex items-center text-xs text-muted-foreground pb-1">
+        {columns.map((c) => (
+          <div
+            key={c.key}
+            className={`px-2 ${c.align === 'right' ? 'text-right' : ''}`}
+            style={{ width: c.width, flex: `0 0 ${c.width}` }}
+          >
+            {c.header}
+          </div>
+        ))}
       </div>
+
+      {virtualize ? (
+        <div
+          ref={parentRef}
+          className="overflow-y-auto rounded-md border border-border"
+          style={{ height: VIEWPORT_HEIGHT }}
+        >
+          <div
+            style={{ height: virtualizer.getTotalSize(), width: '100%', position: 'relative' }}
+          >
+            {items.map((vi) => (
+              <Row
+                key={rows[vi.index].id}
+                row={rows[vi.index]}
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  height: vi.size,
+                  transform: `translateY(${vi.start}px)`,
+                }}
+              />
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div>
+          {rows.map((r) => (
+            <Row key={r.id} row={r} style={{ height: ROW_HEIGHT }} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -1020,73 +1076,106 @@ function PreviewTables({
   dataRows: CleanupDataRow[];
   totals: { freq: number; dur: number; obs: number };
 }) {
-  const [mapPage, setMapPage] = useState(1);
-  const [mapSize, setMapSize] = useState(25);
-  const [dataPage, setDataPage] = useState(1);
-  const [dataSize, setDataSize] = useState(50);
+  const mapColumns: Column<CleanupMapRow>[] = [
+    {
+      key: 'label',
+      header: 'Label',
+      width: '22%',
+      render: (r) => <span className="text-foreground">{r.behavior_subtype ?? '—'}</span>,
+    },
+    {
+      key: 'notes',
+      header: 'Definition / notes',
+      width: '30%',
+      render: (r) => <span className="text-xs">{r.notes ?? '—'}</span>,
+    },
+    {
+      key: 'reason',
+      header: 'Archived reason',
+      width: '20%',
+      render: (r) => <span className="text-xs">{r.archived_reason ?? '—'}</span>,
+    },
+    {
+      key: 'canon',
+      header: 'Canonical',
+      width: '14%',
+      render: (r) => (
+        <span className="font-mono text-xs">{maskUuid(r.bank_behavior_id)}</span>
+      ),
+    },
+    {
+      key: 'created',
+      header: 'Created',
+      width: '14%',
+      render: (r) => (
+        <span className="text-xs">
+          {r.created_at ? new Date(r.created_at).toLocaleDateString() : '—'}
+        </span>
+      ),
+    },
+  ];
 
-  useEffect(() => setMapPage(1), [mapRows, mapSize]);
-  useEffect(() => setDataPage(1), [dataRows, dataSize]);
-
-  const visibleMaps = useMemo(
-    () => paginate(mapRows, mapPage, mapSize),
-    [mapRows, mapPage, mapSize],
-  );
-  const visibleData = useMemo(
-    () => paginate(dataRows, dataPage, dataSize),
-    [dataRows, dataPage, dataSize],
-  );
+  const dataColumns: Column<CleanupDataRow>[] = [
+    {
+      key: 'behavior',
+      header: 'Behavior',
+      width: '28%',
+      render: (r) => (
+        <span className="text-foreground">{r.behavior_name ?? maskUuid(r.behavior_id)}</span>
+      ),
+    },
+    {
+      key: 'session',
+      header: 'Session',
+      width: '16%',
+      render: (r) => <span className="font-mono text-xs">{maskUuid(r.session_id)}</span>,
+    },
+    {
+      key: 'freq',
+      header: 'Freq',
+      width: '12%',
+      align: 'right',
+      render: (r) => r.frequency ?? 0,
+    },
+    {
+      key: 'dur',
+      header: 'Dur (s)',
+      width: '14%',
+      align: 'right',
+      render: (r) => r.duration_seconds ?? 0,
+    },
+    {
+      key: 'obs',
+      header: 'Obs (min)',
+      width: '14%',
+      align: 'right',
+      render: (r) => r.observation_minutes ?? 0,
+    },
+    {
+      key: 'created',
+      header: 'Created',
+      width: '16%',
+      render: (r) => (
+        <span className="text-xs">
+          {r.created_at ? new Date(r.created_at).toLocaleDateString() : '—'}
+        </span>
+      ),
+    },
+  ];
 
   return (
     <div className="space-y-5">
       <div>
         <div className="text-xs font-medium text-muted-foreground mb-2">
-          Behavior names & definitions ({mapRows.length})
+          Behavior names &amp; definitions ({mapRows.length})
+          {mapRows.length > VIRTUAL_THRESHOLD && ' — scroll to review all rows'}
         </div>
         {mapRows.length === 0 ? (
           <p className="text-xs text-muted-foreground">None</p>
         ) : (
-          <>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="text-left text-muted-foreground">
-                  <tr>
-                    <th className="py-1.5 pr-4">Label</th>
-                    <th className="py-1.5 pr-4">Definition / notes</th>
-                    <th className="py-1.5 pr-4">Archived reason</th>
-                    <th className="py-1.5 pr-4">Canonical</th>
-                    <th className="py-1.5 pr-4">Created</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {visibleMaps.map((r) => (
-                    <tr key={r.id} className="border-t border-border">
-                      <td className="py-1.5 pr-4 text-foreground">
-                        {r.behavior_subtype ?? '—'}
-                      </td>
-                      <td className="py-1.5 pr-4 text-xs max-w-[16rem] truncate">
-                        {r.notes ?? '—'}
-                      </td>
-                      <td className="py-1.5 pr-4 text-xs">{r.archived_reason ?? '—'}</td>
-                      <td className="py-1.5 pr-4 font-mono text-xs">
-                        {maskUuid(r.bank_behavior_id)}
-                      </td>
-                      <td className="py-1.5 pr-4 text-xs">
-                        {r.created_at ? new Date(r.created_at).toLocaleDateString() : '—'}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <Pager
-              total={mapRows.length}
-              page={mapPage}
-              pageSize={mapSize}
-              onPage={setMapPage}
-              onPageSize={setMapSize}
-            />
-          </>
+          <div className="overflow-x-auto">
+            <VirtualTable rows={mapRows} columns={mapColumns} />
+          </div>
         )}
       </div>
 
@@ -1094,53 +1183,14 @@ function PreviewTables({
         <div className="text-xs font-medium text-muted-foreground mb-2">
           Interval / frequency / duration data ({dataRows.length}) — {totals.freq} events,{' '}
           {totals.dur}s duration, {totals.obs} observation min
+          {dataRows.length > VIRTUAL_THRESHOLD && ' — scroll to review all rows'}
         </div>
         {dataRows.length === 0 ? (
           <p className="text-xs text-muted-foreground">None</p>
         ) : (
-          <>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="text-left text-muted-foreground">
-                  <tr>
-                    <th className="py-1.5 pr-4">Behavior</th>
-                    <th className="py-1.5 pr-4">Session</th>
-                    <th className="py-1.5 pr-4 text-right">Freq</th>
-                    <th className="py-1.5 pr-4 text-right">Dur (s)</th>
-                    <th className="py-1.5 pr-4 text-right">Obs (min)</th>
-                    <th className="py-1.5 pr-4">Created</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {visibleData.map((r) => (
-                    <tr key={r.id} className="border-t border-border">
-                      <td className="py-1.5 pr-4 text-foreground">
-                        {r.behavior_name ?? maskUuid(r.behavior_id)}
-                      </td>
-                      <td className="py-1.5 pr-4 font-mono text-xs">
-                        {maskUuid(r.session_id)}
-                      </td>
-                      <td className="py-1.5 pr-4 text-right">{r.frequency ?? 0}</td>
-                      <td className="py-1.5 pr-4 text-right">{r.duration_seconds ?? 0}</td>
-                      <td className="py-1.5 pr-4 text-right">
-                        {r.observation_minutes ?? 0}
-                      </td>
-                      <td className="py-1.5 pr-4 text-xs">
-                        {r.created_at ? new Date(r.created_at).toLocaleDateString() : '—'}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <Pager
-              total={dataRows.length}
-              page={dataPage}
-              pageSize={dataSize}
-              onPage={setDataPage}
-              onPageSize={setDataSize}
-            />
-          </>
+          <div className="overflow-x-auto">
+            <VirtualTable rows={dataRows} columns={dataColumns} />
+          </div>
         )}
       </div>
     </div>
