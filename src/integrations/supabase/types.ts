@@ -15086,6 +15086,30 @@ export type Database = {
         }
         Relationships: []
       }
+      cleanup_purge_runs: {
+        Row: {
+          created_at: string
+          id: string
+          oldest_retention_until: string | null
+          purged_count: number
+          ran_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          oldest_retention_until?: string | null
+          purged_count?: number
+          ran_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          oldest_retention_until?: string | null
+          purged_count?: number
+          ran_at?: string
+        }
+        Relationships: []
+      }
       clearinghouse_submissions: {
         Row: {
           agency_id: string | null
@@ -84445,6 +84469,7 @@ export type Database = {
             }
             Returns: string
           }
+      purge_expired_cleanup_archives: { Args: never; Returns: number }
       push_approved_goal_drafts_to_iep_meeting: {
         Args: {
           p_created_by?: string
