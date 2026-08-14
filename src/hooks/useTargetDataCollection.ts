@@ -71,8 +71,8 @@ export function useTargetDataCollection(targetId: string, method: string) {
       prompt_success: isIndependent,
       recorded_at: now,
       recorded_by: user?.id || undefined,
-      session_type: method || 'discrete_trial',
-      data_state: 'final',
+      session_type: method === 'probe' ? 'probe' : 'teaching',
+      data_state: 'measured',
       notes: notes || undefined,
     };
 
@@ -150,8 +150,8 @@ export function useTargetDataCollection(targetId: string, method: string) {
       outcome: 'correct',
       recorded_at: now,
       recorded_by: user?.id || undefined,
-      session_type: measureType,
-      data_state: 'final',
+      session_type: 'teaching',
+      data_state: 'measured',
       notes: JSON.stringify({ type: measureType, value }),
     };
 
