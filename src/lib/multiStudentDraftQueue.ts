@@ -8,8 +8,10 @@
  * `multi_student_session_drafts` table.
  */
 import { supabase } from '@/integrations/supabase/client';
+import { mergeDrafts, DraftSnapshot } from '@/lib/multiStudentDraftMerge';
 
 const QUEUE_KEY = 'multiStudentSessionDraftQueue:v1';
+const BASE_KEY = 'multiStudentSessionDraftBase:v1';
 
 export interface QueuedDraft {
   sessionId: string;
