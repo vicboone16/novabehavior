@@ -288,7 +288,7 @@ export function MultiStudentSessionBuilder() {
           setChosenStudents(merged.chosenStudents);
           setChosenBehaviors(merged.chosenBehaviors);
           setConfigs(merged.configs as any);
-          toast.info('Merged changes from another device');
+          toast({ title: 'Merged changes from another device' });
         }
         dequeue(sid);
         pendingSyncRef.current = false;
