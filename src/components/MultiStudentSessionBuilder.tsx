@@ -275,26 +275,27 @@ export function MultiStudentSessionBuilder() {
           setSyncStatus('idle');
           return;
         }
-        const { error } = await supabase
-          .from('multi_student_session_drafts' as any)
-          .upsert(
-            {
-              user_id: user.id,
-              session_id: sid,
-              chosen_students: cs as any,
-              chosen_behaviors: cb as any,
-              configs: cfgs as any,
-              updated_at: new Date().toISOString(),
-            },
-            { onConflict: 'user_id,session_id' }
-          );
-        if (error) throw error;
+        const merged = await syncDraft(
+          sid,
+          { chosenStudents: cs, chosenBehaviors: cb, configs: cfgs as any, updatedAt: Date.now() },
+          user.id
+        );
+        // Adopt any remote edits that the merge pulled in.
+        const changed =
+          JSON.stringify([cs, cb, cfgs]) !==
+          JSON.stringify([merged.chosenStudents, merged.chosenBehaviors, merged.configs]);
+        if (changed) {
+          setChosenStudents(merged.chosenStudents);
+          setChosenBehaviors(merged.chosenBehaviors);
+          setConfigs(merged.configs as any);
+          toast.info('Merged changes from another device');
+        }
         dequeue(sid);
         pendingSyncRef.current = false;
         setLastSyncedAt(Date.now());
         setSyncStatus('saved');
       } catch {
-        // Persist to offline queue so it syncs on next app open
+        // Persist to offline queue so it syncs (and merges) on next app open
         enqueueDraft({ sessionId: sid, chosenStudents: cs, chosenBehaviors: cb, configs: cfgs as any, queuedAt: Date.now() });
         pendingSyncRef.current = true;
         setSyncStatus('error');
