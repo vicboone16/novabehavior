@@ -144,8 +144,8 @@ export function useSessionTargetCollection(studentId: string) {
       prompt_success: isIndependent,
       recorded_at: now,
       recorded_by: user?.id || undefined,
-      session_type: state.program.method || 'discrete_trial',
-      data_state: 'final',
+      session_type: state.program.method === 'probe' ? 'probe' : 'teaching',
+      data_state: 'measured',
       notes: notes || undefined,
     };
     Object.keys(insertRow).forEach(k => { if (insertRow[k] === undefined) delete insertRow[k]; });
@@ -214,8 +214,8 @@ export function useSessionTargetCollection(studentId: string) {
       outcome: 'correct',
       recorded_at: new Date().toISOString(),
       recorded_by: user?.id,
-      session_type: 'frequency',
-      data_state: 'final',
+      session_type: 'teaching',
+      data_state: 'measured',
       notes: JSON.stringify({ type: 'frequency', value: count }),
     });
 
@@ -236,8 +236,8 @@ export function useSessionTargetCollection(studentId: string) {
       outcome: 'correct',
       recorded_at: new Date().toISOString(),
       recorded_by: user?.id,
-      session_type: measureType,
-      data_state: 'final',
+      session_type: 'teaching',
+      data_state: 'measured',
       notes: JSON.stringify({ type: measureType, value: seconds }),
     });
 
@@ -263,8 +263,8 @@ export function useSessionTargetCollection(studentId: string) {
       prompt_level_id: promptLevelId || undefined,
       recorded_at: new Date().toISOString(),
       recorded_by: user?.id,
-      session_type: 'task_analysis',
-      data_state: 'final',
+      session_type: 'teaching',
+      data_state: 'measured',
     };
     Object.keys(insertRow).forEach(k => { if (insertRow[k] === undefined) delete insertRow[k]; });
 
@@ -307,8 +307,8 @@ export function useSessionTargetCollection(studentId: string) {
       prompt_success: pct >= 80,
       recorded_at: new Date().toISOString(),
       recorded_by: user?.id,
-      session_type: 'task_analysis',
-      data_state: 'final',
+      session_type: 'teaching',
+      data_state: 'measured',
       notes: JSON.stringify({ type: 'task_analysis', stepsCorrect: correct, stepsTotal: total, percentCorrect: pct }),
     });
   }, [targetStates, sessionId, user?.id]);
