@@ -250,7 +250,7 @@ export default function Welcome() {
                 <p className="text-muted-foreground text-sm leading-relaxed mb-4">{a.desc}</p>
                 <Link to={a.to}>
                   <Button variant="outline" size="sm" className="border-foreground/20">
-                    Learn more
+                    Learn about platform add-ons
                     <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
                   </Button>
                 </Link>

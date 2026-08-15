@@ -53,7 +53,7 @@ export function AskNovaButton() {
           <CardContent className="p-4 space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-semibold">Ask Nova</h3>
-              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => { setIsOpen(false); setSelectedResponse(null); }}>
+              <Button variant="ghost" size="icon" className="h-6 w-6" aria-label="Close Ask Nova panel" onClick={() => { setIsOpen(false); setSelectedResponse(null); }}>
                 <X className="w-3.5 h-3.5" />
               </Button>
             </div>
@@ -107,6 +107,7 @@ export function AskNovaButton() {
         className="fixed right-4 sm:right-6 z-40 shadow-lg gap-2 rounded-full px-5 h-12 bg-demo-accent hover:bg-demo-accent/90 text-demo-foreground"
         style={{ bottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))' }}
         onClick={() => setIsOpen(!isOpen)}
+        aria-label="Open Ask Nova assistant"
       >
         <MessageCircle className="w-5 h-5" />
         <span className="hidden sm:inline">Ask Nova</span>
