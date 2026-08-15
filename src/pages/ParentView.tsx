@@ -284,6 +284,7 @@ export default function ParentView() {
                 disabled={!replyText.trim() || sending}
                 onClick={() => sendMessage(replyText.trim())}
                 className="shrink-0 self-end"
+                aria-label="Send message to teacher"
               >
                 {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
               </Button>

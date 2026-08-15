@@ -59,6 +59,7 @@ export const WelcomeNav = () => {
         <button
           className="md:hidden p-2 rounded-md text-muted-foreground"
           onClick={() => setOpen(!open)}
+          aria-label={open ? "Close mobile menu" : "Open mobile menu"}
         >
           {open ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
         </button>
