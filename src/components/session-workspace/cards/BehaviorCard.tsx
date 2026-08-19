@@ -9,6 +9,7 @@ import { CompactFrequencyTally } from './CompactFrequencyTally';
 import { CompactDurationTracker } from './CompactDurationTracker';
 import { CompactIntervalTracker } from './CompactIntervalTracker';
 import { MobileLatencyTracker } from '@/components/mobile/MobileLatencyTracker';
+import { IOAEntryPanel } from '@/components/IOAEntry';
 
 interface BehaviorCardProps {
   studentId: string;
@@ -97,6 +98,15 @@ export function BehaviorCard({
             Use the <span className="font-semibold">+ ABC</span> action to log an entry below.
           </div>
         )}
+      </div>
+
+      <div className="flex gap-1 flex-wrap pt-1.5 border-t mt-0.5">
+        <IOAEntryPanel
+          studentId={studentId}
+          behaviorId={behavior.id}
+          behaviorName={behavior.name}
+          studentColor={studentColor}
+        />
       </div>
     </Card>
   );

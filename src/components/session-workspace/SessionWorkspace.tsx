@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, LayoutGrid, Smartphone, Settings2, AlertTriangle, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -124,6 +124,15 @@ export function SessionWorkspace({ onClose }: SessionWorkspaceProps) {
   const [pinnedIds, setPinnedIds] = useState<string[]>([]);
   const [filter, setFilter] = useState<FilterChip>('all');
   const [focusOpen, setFocusOpen] = useState(false);
+
+  // Auto-open setup modal when students are first added to the session
+  const prevActiveCountRef = useRef(activeStudents.length);
+  useEffect(() => {
+    if (prevActiveCountRef.current === 0 && activeStudents.length > 0) {
+      setSetupModalOpen(true);
+    }
+    prevActiveCountRef.current = activeStudents.length;
+  }, [activeStudents.length]);
 
   const layout = prefs.layout;
 
