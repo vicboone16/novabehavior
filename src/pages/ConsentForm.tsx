@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { getTokenClient } from '@/integrations/supabase/tokenClient';
 import { supabase } from '@/integrations/supabase/client';
 import { ConsentFormViewer } from '@/components/consent/ConsentFormViewer';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -49,7 +50,7 @@ export default function ConsentForm() {
       setError(null);
 
       // Fetch submission by access token
-      const { data: submissionData, error: submissionError } = await supabase
+      const { data: submissionData, error: submissionError } = await (getTokenClient(token) as any)
         .from('consent_form_submissions')
         .select('*')
         .eq('access_token', token)
@@ -125,7 +126,7 @@ export default function ConsentForm() {
         : null;
 
       // Update submission with form data and signature
-      const { error: updateError } = await supabase
+      const { error: updateError } = await (getTokenClient(token) as any)
         .from('consent_form_submissions')
         .update({
           form_data: data.formData,

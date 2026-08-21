@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { getTokenClient } from '@/integrations/supabase/tokenClient';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -18,7 +19,7 @@ export function useObservationRequests(studentId?: string, showAll?: boolean) {
     setIsLoading(true);
 
     try {
-      let query = supabase
+      let query = (getTokenClient(token) as any)
         .from('observation_requests')
         .select('*')
         .order('created_at', { ascending: false });
@@ -58,7 +59,7 @@ export function useObservationRequests(studentId?: string, showAll?: boolean) {
     if (!user) return null;
 
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (getTokenClient(token) as any)
         .from('observation_requests')
         .insert({
           ...request,
@@ -98,7 +99,7 @@ export function useObservationRequests(studentId?: string, showAll?: boolean) {
       if (fnError) {
         console.error('Edge function error:', fnError);
         // Fallback: just update status if edge function fails
-        const { error } = await supabase
+        const { error } = await (getTokenClient(token) as any)
           .from('observation_requests')
           .update({ 
             status: 'sent', 
@@ -133,7 +134,7 @@ export function useObservationRequests(studentId?: string, showAll?: boolean) {
 
   const cancelRequest = async (requestId: string) => {
     try {
-      const { error } = await supabase
+      const { error } = await (getTokenClient(token) as any)
         .from('observation_requests')
         .update({ status: 'expired' })
         .eq('id', requestId);
@@ -153,7 +154,7 @@ export function useObservationRequests(studentId?: string, showAll?: boolean) {
 
   const voidRequest = async (requestId: string) => {
     try {
-      const { error } = await supabase
+      const { error } = await (getTokenClient(token) as any)
         .from('observation_requests')
         .update({ status: 'expired' })
         .eq('id', requestId);
@@ -191,7 +192,7 @@ export function usePublicObservationRequest(token: string) {
   useEffect(() => {
     const fetchRequest = async () => {
       try {
-        const { data, error } = await supabase
+        const { data, error } = await (getTokenClient(token) as any)
           .from('observation_requests')
           .select('*')
           .eq('access_token', token)
@@ -214,7 +215,7 @@ export function usePublicObservationRequest(token: string) {
 
         // Mark as opened
         if (req.status === 'sent' || req.status === 'pending') {
-          await supabase
+          await (getTokenClient(token) as any)
             .from('observation_requests')
             .update({ 
               status: 'opened', 
@@ -241,7 +242,7 @@ export function usePublicObservationRequest(token: string) {
     if (!request) return false;
 
     try {
-      const { error } = await supabase
+      const { error } = await (getTokenClient(token) as any)
         .from('observation_requests')
         .update({
           status: 'completed',

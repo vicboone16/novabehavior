@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
+import { getTokenClient } from '@/integrations/supabase/tokenClient';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -37,7 +38,7 @@ export default function PublicFormPage() {
       }
 
       try {
-        const { data, error: fetchError } = await supabase
+        const { data, error: fetchError } = await (getTokenClient(token) as any)
           .from('custom_form_submissions')
           .select('*, custom_forms(*)')
           .eq('access_token', token)
@@ -86,7 +87,7 @@ export default function PublicFormPage() {
 
     setIsSubmitting(true);
     try {
-      const { error: updateError } = await supabase
+      const { error: updateError } = await (getTokenClient(token) as any)
         .from('custom_form_submissions')
         .update({
           responses: responses as any,
