@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
+import { getTokenClient } from '@/integrations/supabase/tokenClient';
 import { supabase } from '@/integrations/supabase/client';
 import PublicFormPage from './PublicFormPage';
 import { ParentPortalView } from '@/components/intake-forms';
@@ -18,7 +19,7 @@ export default function FormRouteResolver() {
         return;
       }
 
-      const { data, error } = await supabase
+      const { data, error } = await (getTokenClient(token) as any)
         .from('form_delivery_links')
         .select('token')
         .eq('token', token)

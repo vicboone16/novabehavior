@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { isServiceRoleCaller, getAuthenticatedUser, isAdminUser } from "../_shared/authGuards.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -34,6 +35,13 @@ serve(async (req) => {
   }
 
   try {
+    // Authorization: admin session or service-role caller required
+    if (!isServiceRoleCaller(req)) {
+      const caller = await getAuthenticatedUser(req);
+      if (!caller) return jsonResponse({ error: "Unauthorized" }, 401);
+      if (!(await isAdminUser(caller.id))) return jsonResponse({ error: "Forbidden" }, 403);
+    }
+
     const { task_id } = await req.json();
 
     if (!task_id) {

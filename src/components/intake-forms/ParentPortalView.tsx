@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { getTokenClient } from '@/integrations/supabase/tokenClient';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -68,7 +69,7 @@ export function ParentPortalView({ token }: Props) {
 
   const loadFormFromToken = async () => {
     try {
-      const { data: link, error: linkErr } = await supabase
+      const { data: link, error: linkErr } = await (getTokenClient(token) as any)
         .from('form_delivery_links')
         .select('form_instance_id, expires_at')
         .eq('token', token)
@@ -76,7 +77,7 @@ export function ParentPortalView({ token }: Props) {
       if (linkErr || !link) { setError('Invalid or expired link'); setLoading(false); return; }
       if (link.expires_at && new Date(link.expires_at) < new Date()) { setError('This link has expired'); setLoading(false); return; }
 
-      await supabase.from('form_delivery_links').update({ delivery_status: 'opened', opened_at: new Date().toISOString() } as any).eq('token', token);
+      await (getTokenClient(token) as any).from('form_delivery_links').update({ delivery_status: 'opened', opened_at: new Date().toISOString() } as any).eq('token', token);
 
       const { data: inst } = await supabase
         .from('form_instances')
@@ -216,7 +217,7 @@ export function ParentPortalView({ token }: Props) {
       });
 
       // Mark delivery link completed
-      await supabase.from('form_delivery_links').update({
+      await (getTokenClient(token) as any).from('form_delivery_links').update({
         delivery_status: 'completed',
         completed_at: new Date().toISOString(),
       } as any).eq('token', token);

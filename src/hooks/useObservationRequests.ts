@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { getTokenClient } from '@/integrations/supabase/tokenClient';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -191,7 +192,7 @@ export function usePublicObservationRequest(token: string) {
   useEffect(() => {
     const fetchRequest = async () => {
       try {
-        const { data, error } = await supabase
+        const { data, error } = await (getTokenClient(token) as any)
           .from('observation_requests')
           .select('*')
           .eq('access_token', token)
@@ -214,7 +215,7 @@ export function usePublicObservationRequest(token: string) {
 
         // Mark as opened
         if (req.status === 'sent' || req.status === 'pending') {
-          await supabase
+          await (getTokenClient(token) as any)
             .from('observation_requests')
             .update({ 
               status: 'opened', 
@@ -241,7 +242,7 @@ export function usePublicObservationRequest(token: string) {
     if (!request) return false;
 
     try {
-      const { error } = await supabase
+      const { error } = await (getTokenClient(token) as any)
         .from('observation_requests')
         .update({
           status: 'completed',

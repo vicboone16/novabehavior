@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
+import { getTokenClient } from '@/integrations/supabase/tokenClient';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2, CheckCircle, AlertCircle, Save, Send, ChevronRight, ChevronLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -52,7 +53,7 @@ export default function ClinicalFormPage() {
     const fetchForm = async () => {
       if (!token) { setError('Invalid form link'); setIsLoading(false); return; }
       try {
-        const { data, error: fetchError } = await (supabase as any)
+        const { data, error: fetchError } = await (getTokenClient(token) as any)
           .from('clinical_form_submissions')
           .select('*, clinical_form_templates(*)')
           .eq('access_token', token)
@@ -70,7 +71,7 @@ export default function ClinicalFormPage() {
 
         // Mark as opened
         if (data.status === 'sent') {
-          await (supabase as any).from('clinical_form_submissions').update({ status: 'in_progress' }).eq('id', data.id);
+          await (getTokenClient(token) as any).from('clinical_form_submissions').update({ status: 'in_progress' }).eq('id', data.id);
         }
       } catch (err) {
         setError('Something went wrong');
@@ -87,7 +88,7 @@ export default function ClinicalFormPage() {
     if (!submission) return;
     setIsSaving(true);
     try {
-      await (supabase as any).from('clinical_form_submissions')
+      await (getTokenClient(token) as any).from('clinical_form_submissions')
         .update({ responses, status: 'in_progress', updated_at: new Date().toISOString() })
         .eq('id', submission.id);
       toast.success('Progress saved');
@@ -99,7 +100,7 @@ export default function ClinicalFormPage() {
     if (!submission) return;
     setIsSubmitting(true);
     try {
-      await (supabase as any).from('clinical_form_submissions')
+      await (getTokenClient(token) as any).from('clinical_form_submissions')
         .update({ responses, status: 'submitted', submitted_at: new Date().toISOString(), updated_at: new Date().toISOString() })
         .eq('id', submission.id);
       setIsCompleted(true);

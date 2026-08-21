@@ -22,6 +22,7 @@ Deno.serve(async (req) => {
     if (claimsErr || !claimsData?.claims) {
       return new Response(JSON.stringify({ error: "Invalid token" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
+    const callerId = claimsData.claims.sub as string;
 
     // Use service role for compute — this is a backend job
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -40,6 +41,25 @@ Deno.serve(async (req) => {
         dataSourceId = body.data_source_id || null;
       } catch {
         // No body is fine — runs for all agencies
+      }
+    }
+
+    // Authorization: only admins may recompute globally or for another agency
+    const { data: roleRows } = await supabase.from("user_roles").select("role").eq("user_id", callerId);
+    const isAdmin = (roleRows || []).some((r: { role: string }) => ["admin", "super_admin"].includes(r.role));
+
+    if (!isAdmin) {
+      if (!agencyId) {
+        return new Response(JSON.stringify({ error: "agency_id required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      const { data: membership } = await supabase
+        .from("agency_memberships")
+        .select("agency_id")
+        .eq("user_id", callerId)
+        .eq("agency_id", agencyId)
+        .maybeSingle();
+      if (!membership) {
+        return new Response(JSON.stringify({ error: "Access denied" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
     }
 

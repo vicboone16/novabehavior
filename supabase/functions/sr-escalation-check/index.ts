@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { isServiceRoleCaller, getAuthenticatedUser, isAdminUser } from '../_shared/authGuards.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -8,6 +9,20 @@ const corsHeaders = {
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  // Authorization: scheduled job (service-role / cron secret) or admin session only
+  const cronSecret = Deno.env.get('CRON_SECRET');
+  const providedCron = req.headers.get('x-cron-secret');
+  const cronOk = !!cronSecret && providedCron === cronSecret;
+  if (!cronOk && !isServiceRoleCaller(req)) {
+    const caller = await getAuthenticatedUser(req);
+    if (!caller || !(await isAdminUser(caller.id))) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
   }
 
   try {

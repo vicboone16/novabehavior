@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { isServiceRoleCaller } from "../_shared/authGuards.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -39,8 +40,7 @@ Deno.serve(async (req) => {
 
   try {
     // Internal orchestration: accept service-role bearer — no getClaims
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ")) {
+    if (!isServiceRoleCaller(req)) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 

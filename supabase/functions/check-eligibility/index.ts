@@ -81,6 +81,24 @@ serve(async (req) => {
       );
     }
 
+    // Authorization: ensure caller has access to this student
+    const { data: roleRows } = await supabase.from("user_roles").select("role").eq("user_id", user.id);
+    const isAdmin = (roleRows || []).some((r: any) => ["admin", "super_admin"].includes(r.role));
+    if (!isAdmin) {
+      const { data: access } = await supabase
+        .from("user_student_access")
+        .select("student_id")
+        .eq("user_id", user.id)
+        .eq("student_id", studentId)
+        .maybeSingle();
+      if (!access) {
+        return new Response(
+          JSON.stringify({ success: false, error: "Access denied" }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
     // Get client payer info if not provided
     let memberInfo = subscriberInfo;
     if (!memberInfo && clientPayerId) {
@@ -92,6 +110,7 @@ serve(async (req) => {
           student:students(first_name, last_name, date_of_birth)
         `)
         .eq('id', clientPayerId)
+        .eq('student_id', studentId)
         .single();
       
       if (clientPayer && clientPayer.student) {
