@@ -78,6 +78,7 @@ import { BehaviorDecodedPanel, RewardEffectivenessPanel, BeaconAISuggestionsPane
 import { PhaseChangeManager } from '@/components/PhaseChangeManager';
 import { useAuth } from '@/contexts/AuthContext';
 import { ProgrammingModule } from '@/components/programming';
+import { DataCompletenessWidget } from '@/components/DataCompletenessWidget';
 import { useStudentAccess } from '@/hooks/useStudentAccess';
 import { Session } from '@/types/behavior';
 import { logDataAccess } from '@/lib/auditLogger';
@@ -585,6 +586,7 @@ export default function StudentProfile() {
 
         {/* ====== OVERVIEW TAB ====== */}
         <TabsContent value="overview" className="space-y-4">
+          <DataCompletenessWidget studentId={student.id} />
           <StudentProfileInfo
             student={student}
             onUpdate={(updates) => updateStudentProfile(student.id, updates)}

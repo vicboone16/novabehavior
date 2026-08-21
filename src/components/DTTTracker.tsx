@@ -29,6 +29,7 @@ import {
   SkillTarget,
   DTTTrial,
   DTTSession,
+  FidelityCheck,
   PromptLevel,
   ErrorType,
   CorrectionProcedure,
@@ -250,8 +251,25 @@ export function DTTTracker({
     const requiredMinTrials = criteria.minTrials || 0;
     let isMastered = false;
 
-    const meetsMinTrials = (s: DTTSession) =>
-      requiredMinTrials === 0 || s.trials.length >= requiredMinTrials;
+    // Build fidelity map: date string → highest fidelity% recorded for this skill target
+    const storeState = useDataStore.getState() as any;
+    const allFidelityChecks: FidelityCheck[] = storeState.fidelityChecks || [];
+    const fidelityByDate = new Map<string, number>();
+    allFidelityChecks
+      .filter((f) => f.studentId === studentId && f.skillTargetId === skillTarget.id)
+      .forEach((f) => {
+        const key = format(new Date(f.date), 'yyyy-MM-dd');
+        fidelityByDate.set(key, Math.max(fidelityByDate.get(key) ?? 0, f.overallPercentage));
+      });
+
+    const meetsMinTrials = (s: DTTSession) => {
+      if (requiredMinTrials > 0 && s.trials.length < requiredMinTrials) return false;
+      // Exclude sessions where fidelity was recorded and fell below 80%
+      const dateKey = format(new Date(s.date), 'yyyy-MM-dd');
+      const fidelity = fidelityByDate.get(dateKey);
+      if (fidelity !== undefined && fidelity < 80) return false;
+      return true;
+    };
 
     if (criteria.type === 'percent_correct' && criteria.percentCorrect) {
       const checkCount = criteria.consecutiveSessions || 3;

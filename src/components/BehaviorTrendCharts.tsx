@@ -212,6 +212,45 @@ export function BehaviorTrendCharts() {
   const [showCelerationLine, setShowCelerationLine] = useState(false);
   const [filterSessionType, setFilterSessionType] = useState<string>('all');
   const [rateUsedFallback, setRateUsedFallback] = useState(false);
+
+  // Linear regression for celeration lines — one per behavior key
+  const celerationLines = useMemo(() => {
+    if (!showCelerationLine || chartData.length < 2) return new Map<string, { slope: number; intercept: number }>();
+    const freqKeys = behaviorNames.filter(
+      (n) => !n.includes('(%)') && !n.includes('(sec)') && !n.includes('(/hr)'),
+    );
+    const result = new Map<string, { slope: number; intercept: number }>();
+    for (const key of freqKeys) {
+      const points = chartData
+        .map((d, i) => ({ x: i, y: typeof d[key] === 'number' ? (d[key] as number) : NaN }))
+        .filter((p) => !isNaN(p.y));
+      if (points.length < 2) continue;
+      const n = points.length;
+      const sumX = points.reduce((s, p) => s + p.x, 0);
+      const sumY = points.reduce((s, p) => s + p.y, 0);
+      const sumXY = points.reduce((s, p) => s + p.x * p.y, 0);
+      const sumX2 = points.reduce((s, p) => s + p.x * p.x, 0);
+      const denom = n * sumX2 - sumX * sumX;
+      if (denom === 0) continue;
+      result.set(key, {
+        slope: (n * sumXY - sumX * sumY) / denom,
+        intercept: (sumY - sumX * ((n * sumXY - sumX * sumY) / denom)) / n,
+      });
+    }
+    return result;
+  }, [showCelerationLine, chartData, behaviorNames]);
+
+  // Chart data augmented with trend-line values
+  const chartDataWithTrend = useMemo(() => {
+    if (celerationLines.size === 0) return chartData;
+    return chartData.map((d, i) => {
+      const enhanced: Record<string, unknown> = { ...d };
+      celerationLines.forEach((reg, key) => {
+        enhanced[`__trend_${key}`] = parseFloat(Math.max(0, reg.intercept + reg.slope * i).toFixed(2));
+      });
+      return enhanced;
+    });
+  }, [chartData, celerationLines]);
   
   // Historical entry form state
   const [histDate, setHistDate] = useState(format(new Date(), 'yyyy-MM-dd'));
@@ -863,7 +902,7 @@ export function BehaviorTrendCharts() {
                 <CardContent>
                   <ResponsiveContainer width="100%" height={300}>
                     {chartType === 'line' ? (
-                      <LineChart data={chartData}>
+                      <LineChart data={chartDataWithTrend}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="date" fontSize={12} />
                         <YAxis fontSize={12} />
@@ -872,10 +911,10 @@ export function BehaviorTrendCharts() {
                         {behaviorNames
                           .filter(n => !n.includes('(%)') && !n.includes('(sec)') && !n.includes('(/hr)'))
                           .map((name, idx) => (
-                            <Line 
-                              key={name} 
+                            <Line
+                              key={name}
                               type="monotone"
-                              dataKey={name} 
+                              dataKey={name}
                               stroke={CHART_COLORS[idx % CHART_COLORS.length]}
                               strokeWidth={2}
                               dot={{ fill: CHART_COLORS[idx % CHART_COLORS.length], r: 4 }}
@@ -883,6 +922,19 @@ export function BehaviorTrendCharts() {
                             />
                           ))
                         }
+                        {showCelerationLine && Array.from(celerationLines.entries()).map(([key, _], idx) => (
+                          <Line
+                            key={`trend-${key}`}
+                            type="linear"
+                            dataKey={`__trend_${key}`}
+                            stroke={CHART_COLORS[idx % CHART_COLORS.length]}
+                            strokeWidth={1.5}
+                            strokeDasharray="6 3"
+                            dot={false}
+                            name={`${key} (trend)`}
+                            legendType="none"
+                          />
+                        ))}
                       </LineChart>
                     ) : (
                       <BarChart data={chartData}>

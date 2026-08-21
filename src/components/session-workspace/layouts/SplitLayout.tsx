@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Behavior } from '@/types/behavior';
 import { GridLayout } from './GridLayout';
+import { useDataStore } from '@/store/dataStore';
+import { DTTTracker } from '@/components/DTTTracker';
+import { ConcurrentDurationTracker } from '@/components/ConcurrentDurationTracker';
 
 interface SplitLayoutProps {
   studentId: string;
@@ -28,6 +31,12 @@ export function SplitLayout({
     typeof window !== 'undefined' ? window.innerWidth >= 900 : true,
   );
 
+  const { students, addDTTSession, updateSkillTarget } = useDataStore();
+  const student = students.find((s) => s.id === studentId);
+  const skillTargets = (student?.skillTargets ?? []).filter((t) => t.status !== 'mastered');
+  const dttSessions = student?.dttSessions ?? [];
+  const durationBehaviors = behaviors.filter((b) => b.methods.includes('duration'));
+
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const onResize = () => setIsWide(window.innerWidth >= 900);
@@ -41,10 +50,29 @@ export function SplitLayout({
         Skills
       </h3>
       {showSkills ? (
-        <div className="text-sm text-muted-foreground py-6 text-center">
-          Skill targets will appear here.
-          <div className="text-xs mt-1">(Connected in the next phase)</div>
-        </div>
+        skillTargets.length === 0 ? (
+          <div className="text-sm text-muted-foreground py-6 text-center">
+            No active skill targets.
+            <div className="text-xs mt-1">Add targets in the student profile → Skills tab.</div>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {skillTargets.map((target) => (
+              <DTTTracker
+                key={target.id}
+                studentId={studentId}
+                skillTarget={target}
+                studentColor={studentColor ?? 'hsl(var(--primary))'}
+                sessions={dttSessions}
+                onAddTrial={() => {}}
+                onSaveSession={(session) => addDTTSession(studentId, session)}
+                onUpdateTarget={(targetId, updates) =>
+                  updateSkillTarget(studentId, targetId, updates)
+                }
+              />
+            ))}
+          </div>
+        )
       ) : (
         <div className="text-sm text-muted-foreground py-6 text-center">Skills hidden.</div>
       )}
@@ -57,7 +85,16 @@ export function SplitLayout({
         Behaviors
       </h3>
       {showBehaviors ? (
-        <GridLayout studentId={studentId} studentColor={studentColor} behaviors={behaviors} />
+        <div className="space-y-3">
+          {durationBehaviors.length >= 2 && (
+            <ConcurrentDurationTracker
+              studentId={studentId}
+              behaviors={durationBehaviors}
+              studentColor={studentColor ?? 'hsl(var(--primary))'}
+            />
+          )}
+          <GridLayout studentId={studentId} studentColor={studentColor} behaviors={behaviors} />
+        </div>
       ) : (
         <div className="text-sm text-muted-foreground py-6 text-center">Behaviors hidden.</div>
       )}
