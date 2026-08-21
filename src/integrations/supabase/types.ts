@@ -85053,6 +85053,7 @@ export type Database = {
         Args: { p_publish_id: string }
         Returns: undefined
       }
+      request_form_token: { Args: never; Returns: string }
       reset_bops_placement_to_best_fit: {
         Args: { p_selected_by?: string; p_student: string }
         Returns: undefined
