@@ -5,6 +5,30 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 // Fallback user ID (supervisor) when sender's phone isn't in profiles
 const OWNER_USER_ID = Deno.env.get('SMS_OWNER_USER_ID') ?? null
+const TWILIO_AUTH_TOKEN = Deno.env.get('TWILIO_AUTH_TOKEN') ?? ''
+
+/**
+ * Validates Twilio's X-Twilio-Signature header:
+ * HMAC-SHA1(authToken, fullUrl + sorted(param=value) concatenation), base64 encoded.
+ */
+async function verifyTwilioSignature(req: Request, url: string, params: Record<string, string>): Promise<boolean> {
+  const signature = req.headers.get('X-Twilio-Signature') ?? req.headers.get('x-twilio-signature')
+  if (!signature || !TWILIO_AUTH_TOKEN) return false
+
+  let data = url
+  for (const key of Object.keys(params).sort()) data += key + params[key]
+
+  const cryptoKey = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(TWILIO_AUTH_TOKEN),
+    { name: 'HMAC', hash: 'SHA-1' },
+    false,
+    ['sign'],
+  )
+  const mac = await crypto.subtle.sign('HMAC', cryptoKey, new TextEncoder().encode(data))
+  const expected = btoa(String.fromCharCode(...new Uint8Array(mac)))
+  return expected === signature
+}
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -120,6 +144,21 @@ serve(async (req) => {
 
   let formData: FormData
   try { formData = await req.formData() } catch { return new Response('Bad Request', { status: 400 }) }
+
+  // Reject anything that is not a genuine, signed Twilio webhook
+  if (!TWILIO_AUTH_TOKEN) {
+    console.error('TWILIO_AUTH_TOKEN not configured — rejecting webhook')
+    return new Response('Forbidden', { status: 403 })
+  }
+  const sigParams: Record<string, string> = {}
+  for (const [k, v] of formData.entries()) {
+    if (typeof v === 'string') sigParams[k] = v
+  }
+  const webhookUrl = Deno.env.get('TWILIO_WEBHOOK_URL') || req.url
+  if (!(await verifyTwilioSignature(req, webhookUrl, sigParams))) {
+    console.error('Invalid Twilio signature — request rejected')
+    return new Response('Forbidden', { status: 403 })
+  }
 
   const rawBody = (formData.get('Body') ?? '') as string
   const fromPhone = (formData.get('From') ?? '') as string
