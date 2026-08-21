@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { isServiceRoleCaller, getAuthenticatedUser, isAdminUser } from "../_shared/authGuards.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -7,16 +8,31 @@ const corsHeaders = {
 
 const DEMO_AGENCY_ID = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee";
 
+// Demo account passwords are supplied via the DEMO_CAREGIVER_PASSWORD secret,
+// never hardcoded in source. A random one is generated if unset.
+const DEMO_PASSWORD = Deno.env.get("DEMO_CAREGIVER_PASSWORD") ?? crypto.randomUUID() + "aA1!";
+
 const DEMO_PAIRS = [
-  { email: "demo-maria@behaviordecoded.app", password: "DemoParent1!", parentName: "Maria Santos", learnerFirst: "Ethan", learnerLast: "Santos", dob: "2019-03-15" },
-  { email: "demo-david@behaviordecoded.app", password: "DemoParent2!", parentName: "David Chen", learnerFirst: "Lily", learnerLast: "Chen", dob: "2020-07-22" },
-  { email: "demo-aisha@behaviordecoded.app", password: "DemoParent3!", parentName: "Aisha Johnson", learnerFirst: "Marcus", learnerLast: "Johnson", dob: "2018-11-08" },
-  { email: "demo-rachel@behaviordecoded.app", password: "DemoParent4!", parentName: "Rachel Kim", learnerFirst: "Sofia", learnerLast: "Kim", dob: "2021-01-30" },
-  { email: "demo-james@behaviordecoded.app", password: "DemoParent5!", parentName: "James Okafor", learnerFirst: "Amara", learnerLast: "Okafor", dob: "2019-09-12" },
+  { email: "demo-maria@behaviordecoded.app", parentName: "Maria Santos", learnerFirst: "Ethan", learnerLast: "Santos", dob: "2019-03-15" },
+  { email: "demo-david@behaviordecoded.app", parentName: "David Chen", learnerFirst: "Lily", learnerLast: "Chen", dob: "2020-07-22" },
+  { email: "demo-aisha@behaviordecoded.app", parentName: "Aisha Johnson", learnerFirst: "Marcus", learnerLast: "Johnson", dob: "2018-11-08" },
+  { email: "demo-rachel@behaviordecoded.app", parentName: "Rachel Kim", learnerFirst: "Sofia", learnerLast: "Kim", dob: "2021-01-30" },
+  { email: "demo-james@behaviordecoded.app", parentName: "James Okafor", learnerFirst: "Amara", learnerLast: "Okafor", dob: "2019-09-12" },
 ];
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  // Authorization: admin session or service-role caller only
+  if (!isServiceRoleCaller(req)) {
+    const caller = await getAuthenticatedUser(req);
+    if (!caller || !(await isAdminUser(caller.id))) {
+      return new Response(JSON.stringify({ error: "Forbidden" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+  }
 
   const admin = createClient(
     Deno.env.get("SUPABASE_URL")!,
@@ -45,7 +61,7 @@ Deno.serve(async (req) => {
       } else {
         const { data: authData, error: authErr } = await admin.auth.admin.createUser({
           email: pair.email,
-          password: pair.password,
+          password: DEMO_PASSWORD,
           email_confirm: true,
           user_metadata: { display_name: pair.parentName, full_name: pair.parentName },
         });
