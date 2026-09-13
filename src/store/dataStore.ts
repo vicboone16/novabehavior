@@ -738,10 +738,11 @@ export const useDataStore = create<DataState>()(
       addBehavior: (studentId, behavior) => {
         const id = crypto.randomUUID();
         const methods = behavior.methods?.length ? behavior.methods : [behavior.type];
+        const auditEvent = { action: 'added' as const, timestamp: new Date().toISOString() };
         set((state) => ({
           students: state.students.map((s) =>
             s.id === studentId
-              ? { ...s, behaviors: [...s.behaviors, { ...behavior, id, methods }] }
+              ? { ...s, behaviors: [...s.behaviors, { ...behavior, id, methods, auditLog: [auditEvent] }] }
               : s
           ),
         }));
@@ -750,21 +751,22 @@ export const useDataStore = create<DataState>()(
       addBehaviorWithMethods: (studentId, name, methods, options) => {
         const id = crypto.randomUUID();
         const primaryType = methods[0] || 'frequency';
-        const newBehavior: Behavior = { 
-          id, 
-          name, 
-          type: primaryType, 
+        const newBehavior: Behavior = {
+          id,
+          name,
+          type: primaryType,
           methods,
           operationalDefinition: options?.operationalDefinition,
           category: options?.category,
           baseBehaviorId: options?.baseBehaviorId,
+          auditLog: [{ action: 'added', timestamp: new Date().toISOString() }],
         };
         set((state) => ({
           students: state.students.map((s) =>
             s.id === studentId
-              ? { 
-                  ...s, 
-                  behaviors: [...s.behaviors, newBehavior] 
+              ? {
+                  ...s,
+                  behaviors: [...s.behaviors, newBehavior]
                 }
               : s
           ),
@@ -853,6 +855,7 @@ export const useDataStore = create<DataState>()(
       },
 
       archiveBehavior: (studentId, behaviorId) => {
+        const event = { action: 'archived' as const, timestamp: new Date().toISOString() };
         set((state) => ({
           students: state.students.map((s) =>
             s.id === studentId
@@ -860,7 +863,7 @@ export const useDataStore = create<DataState>()(
                   ...s,
                   behaviors: s.behaviors.map((b) =>
                     b.id === behaviorId
-                      ? { ...b, isArchived: true }
+                      ? { ...b, isArchived: true, auditLog: [...(b.auditLog ?? []), event] }
                       : b
                   ),
                 }
@@ -870,6 +873,7 @@ export const useDataStore = create<DataState>()(
       },
 
       unarchiveBehavior: (studentId, behaviorId) => {
+        const event = { action: 'restored' as const, timestamp: new Date().toISOString() };
         set((state) => ({
           students: state.students.map((s) =>
             s.id === studentId
@@ -877,7 +881,7 @@ export const useDataStore = create<DataState>()(
                   ...s,
                   behaviors: s.behaviors.map((b) =>
                     b.id === behaviorId
-                      ? { ...b, isArchived: false, isMastered: false, masteredAt: undefined }
+                      ? { ...b, isArchived: false, isMastered: false, masteredAt: undefined, auditLog: [...(b.auditLog ?? []), event] }
                       : b
                   ),
                 }

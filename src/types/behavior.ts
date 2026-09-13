@@ -274,6 +274,15 @@ export interface BehaviorDefinition {
   createdBy?: string; // User who created it
 }
 
+export type BehaviorAuditAction = 'added' | 'archived' | 'restored' | 'deleted' | 'updated';
+
+export interface BehaviorAuditEvent {
+  action: BehaviorAuditAction;
+  timestamp: string; // ISO 8601
+  actor?: string;    // staff name or 'system'
+  note?: string;
+}
+
 export interface Behavior {
   id: string;
   name: string;
@@ -285,6 +294,8 @@ export interface Behavior {
   isMastered?: boolean; // Behavior goal mastered - archived
   masteredAt?: Date;
   isArchived?: boolean; // Manually archived (different from mastery)
+  // Audit trail — every status-changing action is appended here
+  auditLog?: BehaviorAuditEvent[];
 }
 
 export interface NarrativeNote {
