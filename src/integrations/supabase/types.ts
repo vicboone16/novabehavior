@@ -57397,6 +57397,10 @@ export type Database = {
           goals: Json | null
           grade: string | null
           historical_data: Json | null
+          skill_targets_data: Json | null
+          dtt_sessions_data: Json | null
+          ioa_entries_data: Json | null
+          fidelity_checks_data: Json | null
           id: string
           iep_date: string | null
           iep_end_date: string | null
@@ -57467,6 +57471,10 @@ export type Database = {
           goals?: Json | null
           grade?: string | null
           historical_data?: Json | null
+          skill_targets_data?: Json | null
+          dtt_sessions_data?: Json | null
+          ioa_entries_data?: Json | null
+          fidelity_checks_data?: Json | null
           id?: string
           iep_date?: string | null
           iep_end_date?: string | null
@@ -57537,6 +57545,10 @@ export type Database = {
           goals?: Json | null
           grade?: string | null
           historical_data?: Json | null
+          skill_targets_data?: Json | null
+          dtt_sessions_data?: Json | null
+          ioa_entries_data?: Json | null
+          fidelity_checks_data?: Json | null
           id?: string
           iep_date?: string | null
           iep_end_date?: string | null

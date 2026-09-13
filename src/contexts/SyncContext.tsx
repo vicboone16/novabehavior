@@ -365,6 +365,24 @@ export function SyncProvider({ children }: SyncProviderProps) {
               timestamp: e.timestamp ? new Date(e.timestamp) : new Date(),
             })),
           } : { frequencyEntries: [], durationEntries: [] },
+          // ABA-specific data synced from Supabase
+          skillTargets: ((s as any).skill_targets_data as any[] || []).map((t: any) => ({
+            ...t,
+            createdAt: t.createdAt ? new Date(t.createdAt) : new Date(),
+            updatedAt: t.updatedAt ? new Date(t.updatedAt) : new Date(),
+            masteredDate: t.masteredDate ? new Date(t.masteredDate) : undefined,
+          })),
+          dttSessions: ((s as any).dtt_sessions_data as any[] || []).map((sess: any) => ({
+            ...sess,
+            date: sess.date ? new Date(sess.date) : new Date(),
+            trials: (sess.trials || []).map((tr: any) => ({
+              ...tr,
+              timestamp: tr.timestamp ? new Date(tr.timestamp) : new Date(),
+            })),
+          })),
+          // Temporary staging fields — extracted into top-level store arrays after mapping
+          __cloudIoaEntries: (s as any).ioa_entries_data as any[] || [],
+          __cloudFidelityChecks: (s as any).fidelity_checks_data as any[] || [],
           // Brief Record Review (single instance)
           briefRecordReview: s.brief_record_review || null,
           // Brief Teacher Inputs (multiple respondents)
@@ -436,11 +454,35 @@ export function SyncProvider({ children }: SyncProviderProps) {
           ),
         ];
         
-        useDataStore.setState({ 
+        // Hydrate IOA entries and fidelity checks from per-student cloud columns,
+        // merging with any live-session entries already in store state.
+        const cloudIoaEntries = mappedStudents.flatMap((st) =>
+          ((st as any).__cloudIoaEntries as any[] || []).map((e: any) => ({
+            ...e,
+            date: e.date ? new Date(e.date) : new Date(),
+          }))
+        );
+        const cloudFidelityChecks = mappedStudents.flatMap((st) =>
+          ((st as any).__cloudFidelityChecks as any[] || []).map((c: any) => ({
+            ...c,
+            date: c.date ? new Date(c.date) : new Date(),
+          }))
+        );
+        const currentState2 = useDataStore.getState();
+        const liveIoa = currentState2.ioaEntries.filter(
+          (e) => !cloudIoaEntries.some((c: any) => c.id === e.id)
+        );
+        const liveFidelity = currentState2.fidelityChecks.filter(
+          (c) => !cloudFidelityChecks.some((cc: any) => cc.id === c.id)
+        );
+
+        useDataStore.setState({
           students: mappedStudents,
           behaviorGoals: goals,
           frequencyEntries: mergedFrequency,
           durationEntries: mergedDuration,
+          ioaEntries: [...cloudIoaEntries, ...liveIoa],
+          fidelityChecks: [...cloudFidelityChecks, ...liveFidelity],
         });
 
         previousStudentsRef.current = JSON.stringify(mappedStudents);

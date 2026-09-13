@@ -38,6 +38,45 @@ import { emitHistoricalDataChanged } from '@/lib/historicalDataSync';
 
 // Direct save of historical data to database - bypasses sync debounce
 const historicalSaveTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
+
+// Debounced sync of ABA-specific student data (skillTargets, dttSessions, ioaEntries, fidelityChecks)
+const abaSaveTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
+function syncAbaDataForStudent(studentId: string) {
+  const existing = abaSaveTimeouts.get(studentId);
+  if (existing) clearTimeout(existing);
+  const timeout = setTimeout(async () => {
+    abaSaveTimeouts.delete(studentId);
+    try {
+      const student = useDataStore.getState().students.find((s) => s.id === studentId);
+      if (!student) return;
+      const serializeDate = (v: unknown): unknown => {
+        if (v instanceof Date) return v.toISOString();
+        if (Array.isArray(v)) return v.map(serializeDate);
+        if (v && typeof v === 'object') {
+          return Object.fromEntries(Object.entries(v as Record<string, unknown>).map(([k, val]) => [k, serializeDate(val)]));
+        }
+        return v;
+      };
+      const { error } = await supabase
+        .from('students')
+        .update({
+          skill_targets_data: serializeDate(student.skillTargets ?? []) as any,
+          dtt_sessions_data: serializeDate(student.dttSessions ?? []) as any,
+          ioa_entries_data: serializeDate(
+            useDataStore.getState().ioaEntries.filter((e) => e.studentId === studentId)
+          ) as any,
+          fidelity_checks_data: serializeDate(
+            useDataStore.getState().fidelityChecks.filter((c) => c.studentId === studentId)
+          ) as any,
+        })
+        .eq('id', studentId);
+      if (error) console.error('[ABASync] Failed to save for student:', studentId, error);
+    } catch (e) {
+      console.error('[ABASync] Error:', e);
+    }
+  }, 600);
+  abaSaveTimeouts.set(studentId, timeout);
+}
 function saveHistoricalDataDirect(studentId: string) {
   const existing = historicalSaveTimeouts.get(studentId);
   if (existing) clearTimeout(existing);
@@ -2690,16 +2729,21 @@ export const useDataStore = create<DataState>()(
       addIOAEntry: (entry) => {
         const id = crypto.randomUUID();
         set((state) => ({ ioaEntries: [...state.ioaEntries, { ...entry, id }] }));
+        syncAbaDataForStudent(entry.studentId);
       },
 
       updateIOAEntry: (id, updates) => {
         set((state) => ({
           ioaEntries: state.ioaEntries.map((e) => (e.id === id ? { ...e, ...updates } : e)),
         }));
+        const entry = get().ioaEntries.find((e) => e.id === id);
+        if (entry) syncAbaDataForStudent(entry.studentId);
       },
 
       deleteIOAEntry: (id) => {
+        const entry = get().ioaEntries.find((e) => e.id === id);
         set((state) => ({ ioaEntries: state.ioaEntries.filter((e) => e.id !== id) }));
+        if (entry) syncAbaDataForStudent(entry.studentId);
       },
 
       getIOAEntries: (studentId, behaviorId) => {
@@ -2712,16 +2756,21 @@ export const useDataStore = create<DataState>()(
       addFidelityCheck: (check) => {
         const id = crypto.randomUUID();
         set((state) => ({ fidelityChecks: [...state.fidelityChecks, { ...check, id }] }));
+        syncAbaDataForStudent(check.studentId);
       },
 
       updateFidelityCheck: (id, updates) => {
         set((state) => ({
           fidelityChecks: state.fidelityChecks.map((c) => (c.id === id ? { ...c, ...updates } : c)),
         }));
+        const check = get().fidelityChecks.find((c) => c.id === id);
+        if (check) syncAbaDataForStudent(check.studentId);
       },
 
       deleteFidelityCheck: (id) => {
+        const check = get().fidelityChecks.find((c) => c.id === id);
         set((state) => ({ fidelityChecks: state.fidelityChecks.filter((c) => c.id !== id) }));
+        if (check) syncAbaDataForStudent(check.studentId);
       },
 
       getFidelityChecks: (studentId, skillTargetId) => {
@@ -2995,6 +3044,7 @@ export const useDataStore = create<DataState>()(
               : s
           ),
         }));
+        syncAbaDataForStudent(studentId);
       },
 
       updateSkillTarget: (studentId, targetId, updates) => {
@@ -3012,6 +3062,7 @@ export const useDataStore = create<DataState>()(
               : s
           ),
         }));
+        syncAbaDataForStudent(studentId);
       },
 
       deleteSkillTarget: (studentId, targetId) => {
@@ -3027,6 +3078,7 @@ export const useDataStore = create<DataState>()(
               : s
           ),
         }));
+        syncAbaDataForStudent(studentId);
       },
 
       addDTTSession: (studentId, session) => {
@@ -3041,6 +3093,7 @@ export const useDataStore = create<DataState>()(
               : s
           ),
         }));
+        syncAbaDataForStudent(studentId);
       },
 
       updateDTTSession: (studentId, sessionId, updates) => {
@@ -3056,6 +3109,7 @@ export const useDataStore = create<DataState>()(
               : s
           ),
         }));
+        syncAbaDataForStudent(studentId);
       },
 
       deleteDTTSession: (studentId, sessionId) => {
@@ -3069,10 +3123,10 @@ export const useDataStore = create<DataState>()(
               : s
           ),
         }));
+        syncAbaDataForStudent(studentId);
       },
 
       addHistoricalDTTSession: (studentId, session) => {
-        // Same as addDTTSession but allows setting custom date
         const id = crypto.randomUUID();
         set((state) => ({
           students: state.students.map((s) =>
@@ -3084,6 +3138,7 @@ export const useDataStore = create<DataState>()(
               : s
           ),
         }));
+        syncAbaDataForStudent(studentId);
       },
     }),
     {
