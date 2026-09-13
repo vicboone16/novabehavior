@@ -817,7 +817,18 @@ export const useDataStore = create<DataState>()(
       },
 
       toggleBehaviorForStudent: (studentId, behaviorId) => {
-        // This could be used for enabling/disabling specific behaviors during a session
+        set((state) => ({
+          students: state.students.map((s) =>
+            s.id === studentId
+              ? {
+                  ...s,
+                  behaviors: s.behaviors.map((b) =>
+                    b.id === behaviorId ? { ...b, isArchived: !b.isArchived } : b
+                  ),
+                }
+              : s
+          ),
+        }));
       },
 
       setBehaviorMastered: (studentId, behaviorId, isMastered) => {

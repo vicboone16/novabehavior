@@ -201,7 +201,7 @@ function InsuranceContent() {
         </TabsContent>
         <TabsContent value="payers">
           <Card><CardHeader><CardTitle className="flex items-center gap-2"><Building2 className="w-5 h-5" />Payer Configuration</CardTitle></CardHeader>
-            <CardContent><Button onClick={() => {}} className="gap-2"><Building2 className="w-4 h-4" />Open Payer Directory</Button></CardContent>
+            <CardContent><Button onClick={() => navigate('/billing/payers')} className="gap-2"><Building2 className="w-4 h-4" />Open Payer Directory</Button></CardContent>
           </Card>
         </TabsContent>
         <TabsContent value="contracts"><ContractRateManager /></TabsContent>

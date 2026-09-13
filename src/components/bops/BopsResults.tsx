@@ -2,12 +2,32 @@ import { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { useBopsQuestions, useStudentBopsProfile, useBopsConstellations, useBopsAssessmentItems, calculateBopsScores } from '@/hooks/useBopsData';
 import { Loader2 } from 'lucide-react';
 
 export function BopsResults({ studentId }: { studentId: string }) {
+  // Fetch the most recent completed assessment session for this student
+  const { data: latestSession, isLoading: sL } = useQuery({
+    queryKey: ['bops-latest-session', studentId],
+    enabled: !!studentId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('bops_assessment_sessions')
+        .select('id')
+        .eq('student_id', studentId)
+        .eq('status', 'completed')
+        .order('completed_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const { data: questions, isLoading: qL } = useBopsQuestions();
-  const { data: responses, isLoading: rL } = useBopsAssessmentItems(undefined); // TODO: pass assessment ID
+  const { data: responses, isLoading: rL } = useBopsAssessmentItems(latestSession?.id);
   const { data: profile } = useStudentBopsProfile(studentId);
   const { data: constellations } = useBopsConstellations();
 
@@ -21,7 +41,17 @@ export function BopsResults({ studentId }: { studentId: string }) {
     return calculateBopsScores(mapped, questions as any);
   }, [responses, questions]);
 
-  if (qL || rL) return <Loader2 className="animate-spin mx-auto mt-8" />;
+  if (sL || qL || rL) return <Loader2 className="animate-spin mx-auto mt-8" />;
+
+  if (!latestSession) {
+    return (
+      <Card>
+        <CardContent className="py-8 text-center text-muted-foreground">
+          No completed BOPS assessment found for this student. Complete the assessment first.
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (!scores) {
     return (
