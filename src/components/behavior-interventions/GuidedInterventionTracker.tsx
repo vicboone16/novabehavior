@@ -205,12 +205,12 @@ import { InterventionsStep } from './steps/InterventionsStep';
        };
  
        // Get existing skill programs or initialize empty array
-       const existingPrograms = (student as any)?.bxSkillPrograms || [];
- 
+       const existingPrograms = student?.bxSkillPrograms || [];
+
        // Update student profile with new skill program
        updateStudentProfile(studentId, {
          bxSkillPrograms: [...existingPrograms, skillProgram],
-       } as any);
+       });
  
        toast.success('Skill program saved successfully');
        onOpenChange(false);

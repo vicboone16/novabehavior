@@ -430,7 +430,7 @@ export function FBAReportGenerator({ student: propStudent, onClose }: FBAReportG
   // Get skill programs for replacement plan section
   const skillPrograms = useMemo(() => {
     if (!selectedStudent) return [];
-    return ((selectedStudent as any).bxSkillPrograms || []) as BxSkillProgram[];
+    return selectedStudent.bxSkillPrograms || [];
   }, [selectedStudent]);
 
   // Analyze ABC data

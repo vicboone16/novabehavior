@@ -136,8 +136,17 @@ export function IntakePacketManager({ studentId, referralId }: IntakePacketManag
         action: 'created'
       });
 
-      // TODO: If email provided, send via edge function
-      // For now, we'll just show the link
+      // Send email notification if address provided
+      if (signerEmail) {
+        const consentUrl = `${window.location.origin}/consent/${submission.access_token}`;
+        await supabase.functions.invoke('send-magic-link-email', {
+          body: {
+            email: signerEmail,
+            subject: 'Consent form ready for your signature',
+            message: `Hello ${signerName},\n\nA consent form has been prepared for your review and signature. Please click the link below to complete it:\n\n${consentUrl}\n\nThis link will expire in 7 days.`,
+          },
+        });
+      }
 
       toast.success('Consent form created! Share the link with the signer.');
       setSendDialogOpen(false);

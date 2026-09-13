@@ -633,6 +633,8 @@ export interface Student {
   briefRecordReviews?: BriefRecordReview[];
   // Brief Teacher Input assessments - MULTI-respondent
   briefTeacherInputs?: BriefTeacherInputSaved[];
+  // Behavior Skill Programs (from Guided Intervention Tracker)
+  bxSkillPrograms?: BxSkillProgram[];
 }
 
 // Brief Record Review saved data (SINGLE instance per student)

@@ -1,4 +1,5 @@
 import { useState, useMemo, useRef } from 'react';
+import { useDataStore } from '@/store/dataStore';
 import { 
   BarChart3, TrendingUp, TrendingDown, Minus, Download, FileText, 
   Calendar, Target, CheckCircle2, Clock, Award
@@ -60,6 +61,7 @@ export function SkillProgressReports({ studentId, studentName }: SkillProgressRe
   const { assessments, loading: assessmentsLoading } = useStudentAssessments(studentId);
   const { dbTargets, loading: dbLoading } = useUnifiedSkillData(studentId, studentName);
   const { domains } = useDomains();
+  const { students } = useDataStore();
 
   const [dateRange, setDateRange] = useState('30');
   const [chartType, setChartType] = useState<'line' | 'bar'>('line');
@@ -250,6 +252,54 @@ export function SkillProgressReports({ studentId, studentName }: SkillProgressRe
 
     return trending;
   }, [targets, dbTargets]);
+
+  // Generalization matrix: person × setting × materials from DTT trial contexts
+  const generalizationMatrix = useMemo(() => {
+    const student = students.find((s) => s.id === studentId);
+    if (!student?.dttSessions?.length) return null;
+
+    const personSet = new Set<string>();
+    const settingSet = new Set<string>();
+    const materialsSet = new Set<string>();
+    const targetNames = new Set<string>();
+    // cells: [person][setting][materials][targetName] = { correct, total }
+    const cells: Record<string, Record<string, Record<string, Record<string, { correct: number; total: number }>>>> = {};
+
+    student.dttSessions.forEach((session) => {
+      const targetName = session.skillTargetName ?? session.skillTargetId ?? 'Unknown';
+      session.trials?.forEach((trial) => {
+        const g = trial.generalization;
+        if (!g) return;
+        const person = g.person || '(any)';
+        const setting = g.setting || '(any)';
+        const materials = g.materials || '(any)';
+        personSet.add(person);
+        settingSet.add(setting);
+        materialsSet.add(materials);
+        targetNames.add(targetName);
+        if (!cells[person]) cells[person] = {};
+        if (!cells[person][setting]) cells[person][setting] = {};
+        if (!cells[person][setting][materials]) cells[person][setting][materials] = {};
+        if (!cells[person][setting][materials][targetName]) {
+          cells[person][setting][materials][targetName] = { correct: 0, total: 0 };
+        }
+        cells[person][setting][materials][targetName].total += 1;
+        if ((trial as any).correct || (trial as any).response === 'correct') {
+          cells[person][setting][materials][targetName].correct += 1;
+        }
+      });
+    });
+
+    if (personSet.size === 0) return null;
+
+    return {
+      persons: Array.from(personSet),
+      settings: Array.from(settingSet),
+      materials: Array.from(materialsSet),
+      targetNames: Array.from(targetNames),
+      cells,
+    };
+  }, [students, studentId]);
 
   // Export to Word document
   const exportToWord = async () => {
@@ -677,6 +727,64 @@ export function SkillProgressReports({ studentId, studentName }: SkillProgressRe
               </CardContent>
             </Card>
           </div>
+
+      {/* Generalization Matrix */}
+      {generalizationMatrix && (
+        <>
+          <Separator className="my-2" />
+          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Generalization Matrix</h3>
+          <Card>
+            <CardHeader className="py-3">
+              <CardTitle className="text-sm">Person × Setting × Materials</CardTitle>
+              <CardDescription className="text-xs">
+                Accuracy (%) per context combination recorded during generalization probes
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="overflow-x-auto">
+              <table className="w-full text-xs border-collapse">
+                <thead>
+                  <tr className="bg-muted/50">
+                    <th className="border px-2 py-1 text-left font-medium">Person</th>
+                    <th className="border px-2 py-1 text-left font-medium">Setting</th>
+                    <th className="border px-2 py-1 text-left font-medium">Materials</th>
+                    {generalizationMatrix.targetNames.map((t) => (
+                      <th key={t} className="border px-2 py-1 text-center font-medium max-w-[80px] truncate">{t}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {generalizationMatrix.persons.flatMap((person) =>
+                    generalizationMatrix.settings.flatMap((setting) =>
+                      generalizationMatrix.materials.map((materials) => {
+                        const row = generalizationMatrix.cells[person]?.[setting]?.[materials];
+                        if (!row) return null;
+                        return (
+                          <tr key={`${person}-${setting}-${materials}`} className="hover:bg-muted/30">
+                            <td className="border px-2 py-1">{person}</td>
+                            <td className="border px-2 py-1">{setting}</td>
+                            <td className="border px-2 py-1">{materials}</td>
+                            {generalizationMatrix.targetNames.map((targetName) => {
+                              const cell = row[targetName];
+                              if (!cell) return <td key={targetName} className="border px-2 py-1 text-center text-muted-foreground">—</td>;
+                              const pct = cell.total > 0 ? Math.round((cell.correct / cell.total) * 100) : 0;
+                              const bg = pct >= 80 ? 'bg-green-100 text-green-800' : pct >= 60 ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800';
+                              return (
+                                <td key={targetName} className={`border px-2 py-1 text-center font-mono ${bg}`}>
+                                  {pct}%<span className="text-muted-foreground font-normal"> ({cell.total})</span>
+                                </td>
+                              );
+                            })}
+                          </tr>
+                        );
+                      }).filter(Boolean)
+                    )
+                  )}
+                </tbody>
+              </table>
+            </CardContent>
+          </Card>
+        </>
+      )}
     </div>
   );
 }

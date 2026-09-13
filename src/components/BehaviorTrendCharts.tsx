@@ -294,26 +294,30 @@ export function BehaviorTrendCharts() {
       if (!isInDateRange(sessionDate)) return;
 
       // Session type filter
-      if (filterSessionType !== 'all' && (session as any).sessionType !== filterSessionType) return;
+      const sessionType = (session as any).sessionType as string | undefined;
+      const isDual = filterSessionType === 'dual';
+      if (!isDual && filterSessionType !== 'all' && sessionType !== filterSessionType) return;
+      if (isDual && sessionType !== 'teaching' && sessionType !== 'probe') return;
 
       const dateKey = format(sessionDate, 'yyyy-MM-dd');
       const entry = getOrCreateDateEntry(dateKey);
       const hasDuration = session.sessionLengthMinutes > 0;
       if (!hasDuration) anyFallback = true;
       const sessionLengthMinutes = session.sessionLengthMinutes || 30;
-      
+
       // Process frequency entries from sessions
       session.frequencyEntries.forEach(freqEntry => {
         if (filterStudent !== 'all' && freqEntry.studentId !== filterStudent) return;
         if (filterBehavior !== 'all' && freqEntry.behaviorId !== filterBehavior) return;
-        
-        // behavior name resolved via resolveName
-        const key = resolveName(freqEntry.behaviorId);
-        
+
+        // behavior name resolved via resolveName; dual mode appends stream suffix
+        const baseName = resolveName(freqEntry.behaviorId);
+        const key = isDual ? `${baseName} [${sessionType === 'probe' ? 'P' : 'T'}]` : baseName;
+
         const wasDataCollected = freqEntry.count > 0 || (freqEntry as any).dataCollected === true;
         if (wasDataCollected) {
           entry.frequencyByBehavior[key] = (entry.frequencyByBehavior[key] || 0) + freqEntry.count;
-          
+
           const freqObsDuration = (freqEntry as any).observationDurationMinutes;
           if (!freqObsDuration) anyFallback = true;
           const durationMinutes = freqObsDuration || sessionLengthMinutes;
@@ -713,11 +717,12 @@ export function BehaviorTrendCharts() {
 
           {/* Session type filter */}
           <Select value={filterSessionType} onValueChange={setFilterSessionType}>
-            <SelectTrigger className="w-[120px] h-8">
+            <SelectTrigger className="w-[150px] h-8">
               <SelectValue placeholder="All Types" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Types</SelectItem>
+              <SelectItem value="dual">Teaching + Probe</SelectItem>
               <SelectItem value="teaching">Teaching only</SelectItem>
               <SelectItem value="probe">Probe only</SelectItem>
               <SelectItem value="maintenance">Maintenance</SelectItem>
@@ -911,17 +916,25 @@ export function BehaviorTrendCharts() {
                         <Legend />
                         {behaviorNames
                           .filter(n => !n.includes('(%)') && !n.includes('(sec)') && !n.includes('(/hr)'))
-                          .map((name, idx) => (
-                            <Line
-                              key={name}
-                              type="monotone"
-                              dataKey={name}
-                              stroke={CHART_COLORS[idx % CHART_COLORS.length]}
-                              strokeWidth={2}
-                              dot={{ fill: CHART_COLORS[idx % CHART_COLORS.length], r: 4 }}
-                              connectNulls={false}
-                            />
-                          ))
+                          .map((name, idx) => {
+                            const isProbeStream = name.endsWith(' [P]');
+                            const colorIdx = isProbeStream
+                              ? behaviorNames.findIndex(n2 => n2 === name.replace(' [P]', ' [T]'))
+                              : idx;
+                            const color = CHART_COLORS[(colorIdx < 0 ? idx : colorIdx) % CHART_COLORS.length];
+                            return (
+                              <Line
+                                key={name}
+                                type="monotone"
+                                dataKey={name}
+                                stroke={color}
+                                strokeWidth={2}
+                                strokeDasharray={isProbeStream ? '5 3' : undefined}
+                                dot={{ fill: color, r: 4 }}
+                                connectNulls={false}
+                              />
+                            );
+                          })
                         }
                         {showCelerationLine && Array.from(celerationLines.entries()).map(([key, _], idx) => (
                           <Line
