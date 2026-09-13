@@ -10,6 +10,7 @@ import { CompactDurationTracker } from './CompactDurationTracker';
 import { CompactIntervalTracker } from './CompactIntervalTracker';
 import { MobileLatencyTracker } from '@/components/mobile/MobileLatencyTracker';
 import { IOAEntryPanel } from '@/components/IOAEntry';
+import { BehaviorAuditHistory } from '@/components/behavior/BehaviorAuditHistory';
 
 interface BehaviorCardProps {
   studentId: string;
@@ -100,13 +101,22 @@ export function BehaviorCard({
         )}
       </div>
 
-      <div className="flex gap-1 flex-wrap pt-1.5 border-t mt-0.5">
+      <div className="flex items-center gap-1 flex-wrap pt-1.5 border-t mt-0.5">
         <IOAEntryPanel
           studentId={studentId}
           behaviorId={behavior.id}
           behaviorName={behavior.name}
           studentColor={studentColor}
         />
+        {/* Status label */}
+        {behavior.isArchived ? (
+          <Badge variant="outline" className="text-[9px] px-1 h-4 text-yellow-700 border-yellow-400">Archived</Badge>
+        ) : behavior.auditLog?.some(e => e.action === 'restored') ? (
+          <Badge variant="outline" className="text-[9px] px-1 h-4 text-blue-700 border-blue-400">Restored</Badge>
+        ) : (
+          <Badge variant="outline" className="text-[9px] px-1 h-4 text-green-700 border-green-400">Active</Badge>
+        )}
+        <BehaviorAuditHistory behavior={behavior} />
       </div>
     </Card>
   );

@@ -1,6 +1,7 @@
 import { useMemo, useState, useRef } from 'react';
 import { format } from 'date-fns';
-import { FileText, Download, Printer, Filter, CheckCircle, XCircle, Clock, MinusCircle, UserPlus, UserMinus, AlertTriangle, User, Activity, SlidersHorizontal } from 'lucide-react';
+import { FileText, Download, Printer, Filter, CheckCircle, XCircle, Clock, MinusCircle, UserPlus, UserMinus, AlertTriangle, User, Activity, SlidersHorizontal, FileSpreadsheet } from 'lucide-react';
+import { saveAs } from 'file-saver';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -239,6 +240,82 @@ export function SessionReportGenerator() {
     handlePrint();
   };
 
+  const exportAllSessionsCSV = () => {
+    const rows: string[] = [];
+    rows.push('Date,Time,Session ID,Type,Student,Behavior,Value,Notes');
+
+    const filterByStudent = (entry: { studentId: string }) =>
+      selectedStudentIds.length === 0 || selectedStudentIds.includes(entry.studentId);
+    const filterByBehavior = (entry: { behaviorId: string }) =>
+      selectedBehaviorIds.length === 0 || selectedBehaviorIds.includes(entry.behaviorId);
+    const includeMethod = (method: DataCollectionMethod) =>
+      selectedMethods.length === 0 || selectedMethods.includes(method);
+
+    sessions.forEach((session) => {
+      if (includeMethod('frequency')) {
+        session.frequencyEntries.filter(e => filterByStudent(e) && filterByBehavior(e)).forEach((e) => {
+          rows.push([
+            format(new Date(session.date), 'yyyy-MM-dd'),
+            format(new Date(session.date), 'HH:mm'),
+            session.id,
+            'Frequency',
+            getStudentName(e.studentId),
+            getBehaviorName(e.studentId, e.behaviorId),
+            e.count.toString(),
+            session.notes || '',
+          ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(','));
+        });
+      }
+      if (includeMethod('duration')) {
+        session.durationEntries.filter(e => filterByStudent(e) && filterByBehavior(e)).forEach((e) => {
+          rows.push([
+            format(new Date(session.date), 'yyyy-MM-dd'),
+            format(new Date(session.date), 'HH:mm'),
+            session.id,
+            'Duration',
+            getStudentName(e.studentId),
+            getBehaviorName(e.studentId, e.behaviorId),
+            formatDuration(e.duration),
+            session.notes || '',
+          ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(','));
+        });
+      }
+      if (includeMethod('interval')) {
+        session.intervalEntries.filter(e => filterByStudent(e) && filterByBehavior(e)).forEach((e) => {
+          rows.push([
+            format(new Date(session.date), 'yyyy-MM-dd'),
+            format(new Date(session.date), 'HH:mm'),
+            session.id,
+            'Interval',
+            getStudentName(e.studentId),
+            getBehaviorName(e.studentId, e.behaviorId),
+            e.voided ? 'N/A' : (e.occurred ? 'Yes' : 'No'),
+            session.notes || '',
+          ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(','));
+        });
+      }
+      if (includeMethod('abc')) {
+        session.abcEntries.filter(e => filterByStudent(e) && filterByBehavior(e)).forEach((e) => {
+          rows.push([
+            format(new Date(session.date), 'yyyy-MM-dd'),
+            format(new Date(session.date), 'HH:mm'),
+            session.id,
+            'ABC',
+            getStudentName(e.studentId),
+            e.behavior,
+            `A:${e.antecedent} C:${e.consequence}`,
+            session.notes || '',
+          ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(','));
+        });
+      }
+    });
+
+    const csv = rows.join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    saveAs(blob, `All_Sessions_${format(new Date(), 'yyyy-MM-dd')}.csv`);
+    toast.success(`Exported ${sessions.length} sessions to CSV`);
+  };
+
   if (sessions.length === 0) {
     return (
       <Dialog>
@@ -456,6 +533,16 @@ export function SessionReportGenerator() {
           )}
 
           <div className="ml-auto flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2"
+              onClick={exportAllSessionsCSV}
+              title={`Export all ${sessions.length} sessions to CSV`}
+            >
+              <FileSpreadsheet className="w-4 h-4" />
+              Export All ({sessions.length})
+            </Button>
             <Button
               variant="outline"
               size="sm"
