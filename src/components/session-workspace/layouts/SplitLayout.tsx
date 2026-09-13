@@ -4,6 +4,9 @@ import { GridLayout } from './GridLayout';
 import { useDataStore } from '@/store/dataStore';
 import { DTTTracker } from '@/components/DTTTracker';
 import { ConcurrentDurationTracker } from '@/components/ConcurrentDurationTracker';
+import { FidelityChecklist } from '@/components/FidelityChecklist';
+import { Button } from '@/components/ui/button';
+import { ClipboardCheck } from 'lucide-react';
 
 interface SplitLayoutProps {
   studentId: string;
@@ -36,6 +39,7 @@ export function SplitLayout({
   const skillTargets = (student?.skillTargets ?? []).filter((t) => t.status !== 'mastered');
   const dttSessions = student?.dttSessions ?? [];
   const durationBehaviors = behaviors.filter((b) => b.methods.includes('duration'));
+  const [fidelityTargetId, setFidelityTargetId] = useState<string | null>(null);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -58,18 +62,38 @@ export function SplitLayout({
         ) : (
           <div className="space-y-3">
             {skillTargets.map((target) => (
-              <DTTTracker
-                key={target.id}
-                studentId={studentId}
-                skillTarget={target}
-                studentColor={studentColor ?? 'hsl(var(--primary))'}
-                sessions={dttSessions}
-                onAddTrial={() => {}}
-                onSaveSession={(session) => addDTTSession(studentId, session)}
-                onUpdateTarget={(targetId, updates) =>
-                  updateSkillTarget(studentId, targetId, updates)
-                }
-              />
+              <div key={target.id} className="space-y-1">
+                <DTTTracker
+                  studentId={studentId}
+                  skillTarget={target}
+                  studentColor={studentColor ?? 'hsl(var(--primary))'}
+                  sessions={dttSessions}
+                  onAddTrial={() => {}}
+                  onSaveSession={(session) => addDTTSession(studentId, session)}
+                  onUpdateTarget={(targetId, updates) =>
+                    updateSkillTarget(studentId, targetId, updates)
+                  }
+                />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 text-xs gap-1 text-muted-foreground"
+                  onClick={() =>
+                    setFidelityTargetId((prev) => (prev === target.id ? null : target.id))
+                  }
+                >
+                  <ClipboardCheck className="w-3 h-3" />
+                  {fidelityTargetId === target.id ? 'Hide fidelity' : 'Fidelity check'}
+                </Button>
+                {fidelityTargetId === target.id && (
+                  <FidelityChecklist
+                    studentId={studentId}
+                    skillTargetId={target.id}
+                    skillTargetName={target.name}
+                    studentColor={studentColor}
+                  />
+                )}
+              </div>
             ))}
           </div>
         )
