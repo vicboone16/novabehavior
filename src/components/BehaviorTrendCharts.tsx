@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import { format, subMonths, subDays, isAfter, parseISO, isValid, startOfDay } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { TrendingUp, BarChart3, PieChart as PieChartIcon, Filter, Plus, Clock, LineChart as LineChartIcon, Calendar, AlertTriangle } from 'lucide-react';
+import { TrendingUp, BarChart3, PieChart as PieChartIcon, Filter, Plus, Clock, LineChart as LineChartIcon, Calendar, AlertTriangle, ShieldCheck } from 'lucide-react';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -203,6 +203,28 @@ export function BehaviorTrendCharts() {
   }, [students]);
   const [filterStudent, setFilterStudent] = useState<string>('all');
   const [filterBehavior, setFilterBehavior] = useState<string>('all');
+  const [onlyAssigned, setOnlyAssigned] = useState(true);
+  // Map: student_id → Set<behavior_id> from nt_learner_behavior_assignments (active)
+  const [assignedByStudent, setAssignedByStudent] = useState<Map<string, Set<string>>>(new Map());
+
+  useEffect(() => {
+    const sids = students.filter(s => !s.isArchived).map(s => s.id);
+    if (sids.length === 0) return;
+    supabase
+      .from('nt_learner_behavior_assignments')
+      .select('learner_id, behavior_id')
+      .in('learner_id', sids)
+      .eq('status', 'active')
+      .then(({ data }) => {
+        const aMap = new Map<string, Set<string>>();
+        (data ?? []).forEach((a: any) => {
+          if (!aMap.has(a.learner_id)) aMap.set(a.learner_id, new Set());
+          aMap.get(a.learner_id)!.add(a.behavior_id);
+        });
+        setAssignedByStudent(aMap);
+      });
+  }, [students]);
+
   const [showRatePerHour, setShowRatePerHour] = useState(false);
   const [showAddHistorical, setShowAddHistorical] = useState(false);
   const [chartType, setChartType] = useState<'line' | 'bar'>('line');
@@ -246,17 +268,31 @@ export function BehaviorTrendCharts() {
     }
   }, [dateRangePreset, customStartDate, customEndDate]);
 
+  // Flat set of assigned behavior IDs for the current student filter
+  const assignedBehaviorIds = useMemo<Set<string>>(() => {
+    if (filterStudent === 'all') {
+      const all = new Set<string>();
+      assignedByStudent.forEach((ids) => ids.forEach((id) => all.add(id)));
+      return all;
+    }
+    return assignedByStudent.get(filterStudent) ?? new Set();
+  }, [assignedByStudent, filterStudent]);
+
   const allBehaviors = useMemo(() => {
-    const behaviors: { id: string; name: string }[] = [];
+    const behaviors: { id: string; name: string; isAssigned: boolean }[] = [];
     students.forEach(student => {
       student.behaviors.forEach(b => {
         if (!behaviors.find(x => x.id === b.id)) {
-          behaviors.push({ id: b.id, name: resolveName(b.id, b.name) });
+          behaviors.push({
+            id: b.id,
+            name: resolveName(b.id, b.name),
+            isAssigned: assignedBehaviorIds.size === 0 || assignedBehaviorIds.has(b.id),
+          });
         }
       });
     });
     return behaviors;
-  }, [students, resolveName]);
+  }, [students, resolveName, assignedBehaviorIds]);
 
   // Process data for charts - combine session data AND historical data
   const chartData = useMemo(() => {
@@ -309,6 +345,7 @@ export function BehaviorTrendCharts() {
       session.frequencyEntries.forEach(freqEntry => {
         if (filterStudent !== 'all' && freqEntry.studentId !== filterStudent) return;
         if (filterBehavior !== 'all' && freqEntry.behaviorId !== filterBehavior) return;
+        if (onlyAssigned && assignedBehaviorIds.size > 0 && !assignedBehaviorIds.has(freqEntry.behaviorId)) return;
 
         // behavior name resolved via resolveName; dual mode appends stream suffix
         const baseName = resolveName(freqEntry.behaviorId);
@@ -330,6 +367,7 @@ export function BehaviorTrendCharts() {
       session.intervalEntries.forEach(intEntry => {
         if (filterStudent !== 'all' && intEntry.studentId !== filterStudent) return;
         if (filterBehavior !== 'all' && intEntry.behaviorId !== filterBehavior) return;
+        if (onlyAssigned && assignedBehaviorIds.size > 0 && !assignedBehaviorIds.has(intEntry.behaviorId)) return;
         
         // behavior name resolved via resolveName
         const key = resolveName(intEntry.behaviorId);
@@ -343,6 +381,7 @@ export function BehaviorTrendCharts() {
       session.durationEntries.forEach(durEntry => {
         if (filterStudent !== 'all' && durEntry.studentId !== filterStudent) return;
         if (filterBehavior !== 'all' && durEntry.behaviorId !== filterBehavior) return;
+        if (onlyAssigned && assignedBehaviorIds.size > 0 && !assignedBehaviorIds.has(durEntry.behaviorId)) return;
         
         // behavior name resolved via resolveName
         const key = resolveName(durEntry.behaviorId);
@@ -473,7 +512,7 @@ export function BehaviorTrendCharts() {
     // Schedule fallback state update outside render
     setTimeout(() => setRateUsedFallback(anyFallback), 0);
     return sorted;
-  }, [sessions, students, frequencyEntries, durationEntries, filterStudent, filterBehavior, filterSessionType, dateRange, resolveName]);
+  }, [sessions, students, frequencyEntries, durationEntries, filterStudent, filterBehavior, filterSessionType, dateRange, resolveName, onlyAssigned, assignedBehaviorIds]);
 
   // Aggregate data for pie chart - includes historical data
   const aggregateData = useMemo(() => {
@@ -489,10 +528,11 @@ export function BehaviorTrendCharts() {
     // Session data
     sessions.forEach(session => {
       if (!isInDateRange(new Date(session.date))) return;
-      
+
       session.frequencyEntries.forEach(entry => {
         if (filterStudent !== 'all' && entry.studentId !== filterStudent) return;
         if (filterBehavior !== 'all' && entry.behaviorId !== filterBehavior) return;
+        if (onlyAssigned && assignedBehaviorIds.size > 0 && !assignedBehaviorIds.has(entry.behaviorId)) return;
         
         // behavior name resolved via resolveName
         const key = resolveName(entry.behaviorId);
@@ -520,7 +560,7 @@ export function BehaviorTrendCharts() {
       value,
       color: CHART_COLORS[idx % CHART_COLORS.length],
     }));
-  }, [sessions, students, filterStudent, filterBehavior, dateRange, resolveName]);
+  }, [sessions, students, filterStudent, filterBehavior, dateRange, resolveName, onlyAssigned, assignedBehaviorIds]);
 
   // Get unique behavior names for chart keys
   const behaviorNames = useMemo(() => {
@@ -709,11 +749,27 @@ export function BehaviorTrendCharts() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Behaviors</SelectItem>
-              {allBehaviors.map(b => (
-                <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
-              ))}
+              {allBehaviors
+                .filter(b => !onlyAssigned || b.isAssigned)
+                .map(b => (
+                  <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+                ))}
             </SelectContent>
           </Select>
+
+          {/* Only assigned toggle */}
+          <div className="flex items-center gap-1.5">
+            <Switch
+              id="only-assigned-chart"
+              checked={onlyAssigned}
+              onCheckedChange={setOnlyAssigned}
+              className="scale-75"
+            />
+            <Label htmlFor="only-assigned-chart" className="text-xs cursor-pointer flex items-center gap-1">
+              <ShieldCheck className="w-3 h-3 text-primary" />
+              Assigned only
+            </Label>
+          </div>
 
           {/* Session type filter */}
           <Select value={filterSessionType} onValueChange={setFilterSessionType}>

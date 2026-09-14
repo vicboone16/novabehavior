@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { TrendingUp, RefreshCw, Download } from 'lucide-react';
+import { TrendingUp, RefreshCw, Download, ShieldCheck } from 'lucide-react';
 import {
   ResponsiveContainer,
   LineChart,
@@ -24,6 +24,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 
 const ALL = '__all__';
@@ -60,6 +62,9 @@ export default function BehaviorTrends() {
   const [abc, setAbc] = useState<AbcRow[]>([]);
   const [studentNames, setStudentNames] = useState<Map<string, string>>(new Map());
   const [behaviorNames, setBehaviorNames] = useState<Map<string, string>>(new Map());
+  // Map: student_id → Set of assigned behavior_ids from nt_learner_behavior_assignments
+  const [assignedByStudent, setAssignedByStudent] = useState<Map<string, Set<string>>>(new Map());
+  const [onlyAssigned, setOnlyAssigned] = useState(true);
 
   const load = async () => {
     setLoading(true);
@@ -125,6 +130,21 @@ export default function BehaviorTrends() {
         (nt ?? []).forEach((b: any) => bMap.set(b.id, b.name));
         setBehaviorNames(bMap);
       }
+
+      // Fetch active canonical assignments for all students in the result set
+      if (sids.length) {
+        const { data: assignments } = await supabase
+          .from('nt_learner_behavior_assignments')
+          .select('learner_id, behavior_id')
+          .in('learner_id', sids)
+          .eq('status', 'active');
+        const aMap = new Map<string, Set<string>>();
+        (assignments ?? []).forEach((a: any) => {
+          if (!aMap.has(a.learner_id)) aMap.set(a.learner_id, new Set());
+          aMap.get(a.learner_id)!.add(a.behavior_id);
+        });
+        setAssignedByStudent(aMap);
+      }
     } catch (e: any) {
       setError(e?.message ?? 'Failed to load trends');
     } finally {
@@ -146,22 +166,38 @@ export default function BehaviorTrends() {
     [bsd, studentNames],
   );
 
+  // Build a flat set of assigned behavior IDs for the current student filter
+  const assignedBehaviorIds = useMemo<Set<string>>(() => {
+    if (studentId === ALL) {
+      const all = new Set<string>();
+      assignedByStudent.forEach((ids) => ids.forEach((id) => all.add(id)));
+      return all;
+    }
+    return assignedByStudent.get(studentId) ?? new Set();
+  }, [assignedByStudent, studentId]);
+
   const behaviorOptions = useMemo(() => {
     const scoped = bsd.filter((r) => studentId === ALL || r.student_id === studentId);
     return Array.from(new Set(scoped.map((r) => r.behavior_id)))
       .filter(Boolean)
-      .map((id) => ({ id, label: behaviorNames.get(id) ?? id.slice(0, 8) + '…' }))
+      .map((id) => ({
+        id,
+        label: behaviorNames.get(id) ?? id.slice(0, 8) + '…',
+        isAssigned: assignedBehaviorIds.size === 0 || assignedBehaviorIds.has(id),
+      }))
+      .filter((b) => !onlyAssigned || b.isAssigned)
       .sort((a, b) => a.label.localeCompare(b.label));
-  }, [bsd, behaviorNames, studentId]);
+  }, [bsd, behaviorNames, studentId, assignedBehaviorIds, onlyAssigned]);
 
   const filtered = useMemo(
     () =>
       bsd.filter(
         (r) =>
           (studentId === ALL || r.student_id === studentId) &&
-          (behaviorId === ALL || r.behavior_id === behaviorId),
+          (behaviorId === ALL || r.behavior_id === behaviorId) &&
+          (!onlyAssigned || assignedBehaviorIds.size === 0 || assignedBehaviorIds.has(r.behavior_id)),
       ),
-    [bsd, studentId, behaviorId],
+    [bsd, studentId, behaviorId, onlyAssigned, assignedBehaviorIds],
   );
 
   const daily = useMemo(() => {
@@ -343,6 +379,22 @@ export default function BehaviorTrends() {
                 ))}
               </SelectContent>
             </Select>
+          </div>
+          <div className="flex items-center gap-2 sm:col-span-2 lg:col-span-4">
+            <Switch
+              id="only-assigned"
+              checked={onlyAssigned}
+              onCheckedChange={setOnlyAssigned}
+            />
+            <Label htmlFor="only-assigned" className="flex items-center gap-1.5 cursor-pointer text-sm">
+              <ShieldCheck className="w-3.5 h-3.5 text-primary" />
+              Only show behaviors assigned in canonical library
+            </Label>
+            {!onlyAssigned && assignedBehaviorIds.size > 0 && (
+              <Badge variant="outline" className="text-[10px]">
+                {behaviorOptions.filter(b => !b.isAssigned).length} unassigned visible
+              </Badge>
+            )}
           </div>
         </CardContent>
       </Card>
