@@ -266,7 +266,7 @@ export function SkillProgressReports({ studentId, studentName }: SkillProgressRe
     const cells: Record<string, Record<string, Record<string, Record<string, { correct: number; total: number }>>>> = {};
 
     student.dttSessions.forEach((session) => {
-      const targetName = session.skillTargetName ?? session.skillTargetId ?? 'Unknown';
+      const targetName = (session as any).skillTargetName ?? session.skillTargetId ?? 'Unknown';
       session.trials?.forEach((trial) => {
         const g = trial.generalization;
         if (!g) return;

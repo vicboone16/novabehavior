@@ -77,8 +77,8 @@ ${goals.length > 0 ? `
 <h2>IEP Goals (${goals.length})</h2>
 ${goals.map((g) => `
 <div class="section">
-  <h3>${g.behaviorName ?? 'Goal'} — <em>${g.goalDescription ?? ''}</em></h3>
-  <p class="meta">Baseline: ${g.baselineValue ?? '—'} &nbsp;|&nbsp; Target: ${g.targetValue ?? '—'} &nbsp;|&nbsp; Mastery: ${g.masteryPercentage ?? '—'}%</p>
+  <h3>${(g as any).behaviorName ?? 'Goal'} — <em>${(g as any).goalDescription ?? g.notes ?? ''}</em></h3>
+  <p class="meta">Baseline: ${g.baseline ?? '—'} &nbsp;|&nbsp; Target: ${g.targetValue ?? '—'} &nbsp;|&nbsp; Mastery: ${g.masteryCriteria ?? '—'}</p>
 </div>`).join('')}
 ` : ''}
 
