@@ -185,6 +185,7 @@ function AuthorizationsContent() {
 
 /* ─────────────────────── Insurance Content ─────────────────────── */
 function InsuranceContent() {
+  const navigate = useNavigate();
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">Insurance eligibility, payer configuration, and contract management.</p>
